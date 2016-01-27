@@ -1,0 +1,102 @@
+28/3/09: this directory also has code to plot the second adiabatic invarient, J.
+
+27/3/09: re-running to examine particle orbits (start of Bz stuff, as multiparticles with the same field as this are quite different to having no guide field)
+
+12/3/08: changed finalBz. This should add in a Bz, as code is using this times dY0dY to calculate Bz. dY0dY -> 1 as t->inf (by current choice of Y0)
+
+
+28/1/08: did mv global_mod1.f90 global_mod.f90
+       and mv input1.dat input.dat
+       to see effect of input1 (see below). Produced energy budget by changing n in energy_budget.pro . Made orbit by similar thing.
+
+KG: tag in comp file added: -O4 compiles with optimisation, but this need to be removed if errors are to be checked/traced
+
+KG:Originally a copy of paolo's folder that is now in
+/scratch/keithg/drift.backup/Bzdir/
+His notes follow.
+
+In this directory we make simulations
+of particle orbits in the collapsing magnetic trap,
+including a magnetic field in the invariant direction, z.
+
+We use a code originally found in
+/user/paolo/simulations/part_orb/paulwood/monopole/drift
+
+input0.dat global_mod0.dat, RV0.dat : no Bz
+ e1=efct*0.5*M*(Vscl*Vpar)**2
+  e2=efct*M*Vscl**2*MU*sqrt(dot(B,B))
+  e3=efct*0.5*M*(Vscl**2)*sum((DRDT-VPAR*bb)**2)
+ write(29,*)Tscl*(T-T1),                          &   !1
+             R,                                    &   !2,3,4
+             VPAR,                                 &   !5
+             MU*sqrt(dot(B,B)),                    &   !6
+             sum((DRDT-VPAR*bb)**2),               &   !7
+             Vscl*B0*E,                            &   !8,9,10
+             B0*B,                                 &   !11,12,13
+             e1,                                   &   !14
+             e2,                                   &   !15
+             e3,                                   &   !16
+             e1+e2+e3,                             &   !17  
+             efct*Q*E0*(L/Tscl)*dot(DRDT,E),       &   !18
+             efct*(M*Vscl*Vscl/Tscl)*MU*dot(B,DBDT)/sqrt(dot(B,B)), & !19 
+             Vscl*Vf,                              &   !20,21,22
+             H                                         !23
+
+The run RV1.dat does not include (???) a Bz magnetic field (Bz=0)
+The meaning of quantities given in RV1.dat is
+
+!  write(29,*)Tscl*(T-T1),                          &   !1
+!             R(1),                                 &   !2
+!             R(2),                                 &   !3
+!             R(3),                                 &   !4
+!             VPAR,                                 &   !5
+!             VPAR**2,                              &   !6
+!             MU*sqrt(dot(B,B)),                    &   !7
+!             sum((DRDT-VPAR*B/sqrt(dot(B,B)))**2), &   !8
+!             E(3),                                 &   !9
+!             E(3)*Vscl*B0,                         &   !10
+!             efct*0.5*M*(Vscl*Vpar)**2,            &   !11
+!             efct*M*Vscl**2*MU*sqrt(dot(B,B)),     &   !12
+!efct*0.5*M*(Vscl**2)*sum((DRDT-VPAR*B/sqrt(dot(B,B)))**2),     & !13
+!             Vscl*Vf,                              &   !14,15,16
+!             B0*B,                                 &   !17,18,19
+!efct*Q*E0*(L/Tscl)*dot(DRDT,E),                            &   !20
+!efct*(M*Vscl*Vscl/Tscl)*MU*dot(B,DBDT)/sqrt(dot(B,B)),
+
+energy_budget_rhs1.eps
+energy_budget_rhs2.eps
+energy_budget_rhs.eps
+check of energy equation (47) in paper I.
+No magnetic field along the invariant direction
+input1.dat global_mod1.dat RV1.dat
+
+vpar_2.eps and vpar_2_2.eps were done with a very simple configurations
+of fields, just a constant Bz field. Vf=0, electric field=0
+xdrift_3.eps and xdrift_3_2.eps were with a Bz field such that:
+Bz=B0*exp(-R(2))  (R(2) is a normalized coordinate)
+input2_3.dat 
+
+ALso,another test was done using the following magnetic field
+(no electric field and no plasma flow)
+B(1)=0
+B(2)=0
+B(3)=B0*T*exp(-R(2))
+DBDX=0; DBDY=0; DBDZ=0;
+DBDY(3)=(-1./L)*B(3)
+DBDT(1)=0
+DBDT(2)=0
+DBDT(3)=B0*exp(-R(2))/Tscl
+E=0
+DEDX=0; DEDY=0; DEDZ=0; DEDT=0
+Vf=0
+dVfdx=0; dVfdy=0; dVfdz=0; dVfdt=0
+
+B=B/B0
+DBDY=(L/B0)*DBDY
+DBDT=(Tscl/B0)*DBDT
+
+global_mod4.f90
+input4.dat
+In this tests magnetic monopole is switched off. Bz evolves according
+to the transformation Bz=dY0dY*Bzfinal
+and electric field is calculated as - u x B

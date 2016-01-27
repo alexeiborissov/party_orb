@@ -1,0 +1,210 @@
+% This is my horrible mutated version of Claire Parnell's original math_def.tex file
+% It hopefully contains lots of useful shortcuts, defined to make life easier..
+% Oh and I stuck in some stuff from Bernie's analytical project too...
+
+
+\newcommand{\diff}[2]{\frac{{\rm d}#1}{{\rm d}#2}}
+\newcommand{\ndiff}[3]{\frac{{\rm d}^{#3}#1}{{\rm d}#2^{#3}}}
+\newcommand{\pdiff}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\npdiff}[3]{\frac{\partial^{#3} #1}{\partial #2^{#3}}}
+\newcommand{\e}[1]{\ensuremath{{\rm e}^{#1}}}
+\newcommand{\ldiff}[2]{\ensuremath{{\rm d}#1/{\rm d}#2}}
+\newcommand{\lpdiff}[2]{\ensuremath{\partial#1/\partial#2}}
+\newcommand{\lnpdiff}[3]{\ensuremath{\partial^{#3}#1/\partial#2^{#3}}}
+
+\newcommand{\vel}{ {\bf v} }
+\newcommand{\Efi}{ {\bf E} }
+\newcommand{\Bfi}{ {\bf B} }
+\newcommand{\Afi}{ {\bf A} }
+\newcommand{\rfi}{ {\bf r} }
+\newcommand{\dipm}{ {\bf m} }
+\newcommand{\Mag}{ {\bf M} }
+\newcommand{\Hfi}{ {\bf H} }
+\newcommand{\Dfi}{ {\bf D} }
+\newcommand{\rvec}{ {\bf r} }
+\newcommand{\Icur}{ {\bf I} }
+\newcommand{\Kcur}{ {\bf K} }
+\newcommand{\Jcur}{ {\bf J} }
+\newcommand{\rvechat}{ {\bf{\hat r}} }
+\newcommand{\ulin}{ \underline }
+\newcommand{\beq}{ \begin{eqnarray} }
+\newcommand{\eeq}{ \end{eqnarray} }
+\newcommand{\dl}{ {\rm d}l }
+\newcommand{\da}{ {\rm d}a }
+\newcommand{\dt}{ {\rm d}\tau }
+\newcommand{\bdl}{ {\bf{\rm d}l} }
+\newcommand{\bda}{ {\bf{\rm d}a} }
+\newcommand{\bdt}{ {\bf{\rm d}\tau} }
+\newcommand{\nor}{ {\bf n} }
+\newcommand{\rmd}{ {\rm d} }
+\newcommand{\dR}{ {\rm d}R }
+\newcommand{\dth}{ {\rm d}\theta }
+\newcommand{\dphi}{ {\rm d}\phi }
+\newcommand{\lra}{ \longrightarrow }
+\newcommand{\Lra}{ \Longrightarrow }
+
+\newcommand{\xhat}{ {{\bf{\hat x}}} }
+\newcommand{\yhat}{ {{\bf{\hat y}}} }
+\newcommand{\zhat}{ {{\bf{\hat z}}} }
+\newcommand{\rhat}{ {\bf{\hat r}} }
+\newcommand{\Rhat}{ {\bf{\hat R}} }
+\newcommand{\that}{ {\boldsymbol{\hat \theta}} }
+\newcommand{\phat}{ {\boldsymbol{\hat \phi}} }
+\newcommand{\dive }{ {\bf {\nabla}} \cdot }
+\newcommand{\curl }{ {\bf {\nabla}} \times }
+\newcommand{\lap }{ {\bf\nabla}^2 }
+\newcommand{\parx}{ {\partial x} }
+\newcommand{\pary}{ {\partial y} }
+\newcommand{\parz}{ {\parital z} }
+\newcommand{\parR}{ {\partial R} }
+\newcommand{\parp}{ {\partial \phi} }
+\newcommand{\parr}{ {\partial r} }
+\newcommand{\pt}{ {\partial \theta} }
+\newcommand{\dxdt}{ \frac{dx}{dt} }
+\newcommand{\dydt}{ \frac{dy}{dt} }
+\newcommand{\dzdt}{ \frac{dz}{dt} }
+\newcommand{\ddxdt}{ \frac{d^2x}{dt^2} }
+\newcommand{\ddydt}{ \frac{d^2y}{dt^2} }
+\newcommand{\ddzdt}{ \frac{d^2z}{dt^2} }
+\newcommand{\dddxdt}{ \frac{d^3x}{dt^3} }
+\newcommand{\dddydt}{ \frac{d^3y}{dt^3} }
+\newcommand{\dddzdt}{ \frac{d^3z}{dt^3} }
+\newcommand{\drdtl}{ {d\bf{r}}/{dt}  }
+\newcommand{\drdt}{ \frac{d \bf{r}}{dt}  }
+\newcommand{\ddrdt}{ \frac{d^2 \bf{r}}{dt^2}  }
+\newcommand{\dddrdt}{ \frac{d^3 \bf{r}}{dt^3}  }
+\newcommand{\vpar}{ v_{\parallel} }
+\newcommand{\vperp}{ v_{\perp} }
+\newcommand{\Eperp}{ E_{\perp} }
+\newcommand{\Wpar}{ W_{\parallel} }
+\newcommand{\Wperp}{ W_{\perp} }
+\newcommand{\dvdt}{ \frac{d \bf{v}}{dt}  }
+\newcommand{\dvxdt}{ \frac{dv_x}{dt} }
+\newcommand{\dvydt}{ \frac{dv_y}{dt} }
+\newcommand{\dvzdt}{ \frac{dv_z}{dt} }
+\newcommand{\ddvxdt}{ \frac{d^2v_x}{dt^2} }
+\newcommand{\ddvydt}{ \frac{d^2v_y}{dt^2} }
+\newcommand{\ddvzdt}{ \frac{d^2v_z}{dt^2} }
+\newcommand{\dvx}{ \.v_x }
+\newcommand{\dvy}{ \.v_y }
+\newcommand{\dvz}{ \.v_z }
+\newcommand{\ddvx}{ \"v_x }
+\newcommand{\ddvy}{ \"v_y }
+\newcommand{\ddvz}{ \"v_z }
+\newcommand{\dOdy}{ \frac{ d \Omega}{dy}}
+\newcommand{\dOp}{ \Omega_{o}^{'} }
+\newcommand{\dOyp}{ \Omega_{y}^{'} }
+\newcommand{\ddvxpdt}{ \frac{d^2}{dt^2} \left( v_{x0} + v_{x1} \right) }
+\newcommand{\ddvypdt}{  \frac{d^2}{dt^2} \left( v_{y0} + v_{y1} \right) }
+\newcommand{\ddvxldt}{ \frac{d^2v_{x0}}{dt^2} }
+\newcommand{\ddvyldt}{ \frac{d^2v_{y0}}{dt^2} }
+\newcommand{\ddvxsdt}{ \frac{d^2v_{x1}}{dt^2} }
+\newcommand{\ddvysdt}{ \frac{d^2v_{y1}}{dt^2} }
+\newcommand{\vxp}{\left( v_{x0} + v_{x1} \right) }
+\newcommand{\vyp}{\left( v_{y0} + v_{y1} \right) }
+
+\newcommand{\boldnabla}{\mbox{\boldmath$\nabla$}}
+
+%Definitions used by Roberts
+
+\def\A{{Alfv\'en}}
+\def\Amp{Amp\`ere}
+\def\Aic{Alfv\'enic}
+\def\eq{equation}
+\def\eqs{equations }
+\def\mhd{magnetohydrodynamic }
+\def\mhds{magnetohydrodynamics }
+\def\ma{magnetoacoustic }
+\def\azimorder{\rm n}
+\def\w{\omega}
+\def\ww{\omega^2}
+\def\cs{c_s}
+\def\css{c_s^2}
+\def\cse{c_{se}}
+\def\csse{c_{se}^2}
+\def\cc{c^2}
+\def\ca{{c_A}}
+\def\caa{c_A^2}
+\def\cao{c_{A}}
+\def\caao{c_{A}^2}
+\def\co{c_{s}}
+\def\coo{c_{s}^2}
+\def\cf{c_f}
+\def\cff{c_f^2}
+\def\ct{c_t}
+\def\ctt{c_t^2}
+\def\cto{c_{t}}
+\def\ctto{c_{t}^2}
+\def\ck{c_k}
+\def\ckk{c_k^2}
+\def\ce{c_{se}}
+\def\cee{c_{se}^2}
+\def\cae{c_{Ae}}
+\def\caae{c_{Ae}^2}
+\def\cte{c_{te}}
+\def\ctte{c_{te}^2}
+\def\rhoo{{\rho}_{0}}
+\def\rhoe{{\rho}_{e}}
+\def\Bo{B_{0}}
+\def\Boo{B_{0}^{2}}
+\def\Be{B_{e}}
+\def\kz{k_z}
+\def\kzz{k_z^2}
+\def\kk{k^2}
+\def\kms{km s$^{-1}$}
+\def\Ws{\Omega_{saus}}
+\def\Wss{\Omega_{saus}^{2}}
+\def\nus{\nu_{saus}}
+\def\Ps{P_{saus}}
+\def\Wk{\Omega_{k}}
+\def\Wkk{\Omega_{k}^{2}}
+\def\nuk{\nu_{k}}
+\def\Pk{P_{k}}
+\def\Wac{\Omega_{ac}}
+\def\Wacc{\Omega_{ac}^{2}}
+\def\WA{\Omega_{A}}
+\def\WAA{\Omega_{A}^{2}}
+\def\nuA{\nu_{A}}
+\def\PA{P_{A}}
+
+\def\grad{\boldnabla}
+
+% My Own Personal Additions:
+\def\eo{\epsilon_{0}}
+\def\muo{\mu_{0}}
+\def\kpar{{k_{\parallel}}}
+\def\kper{{k_{\perp}}}
+\def\vxx{{\bf{v}_x}}
+\def\vyy{{\bf{v}_y}}
+\def\vzz{{\bf{v}_z}}
+\def\vx{v_x}
+\def\vy{v_y}
+\def\vz{v_z}
+\def\xhat{\bf{\hat{x}}}
+\def\yhat{\bf{\hat{y}}}
+\def\zhat{\bf{\hat{z}}}
+\def\vhat{\hat{v}}
+\def\di{\delta_i}
+
+\def\vscl{{\color{OliveGreen}{v_{scl}}}}
+\def\vsclsq{{\color{OliveGreen}{{v_{scl}}^2}}}
+\def\lscl{{\color{OliveGreen}{l_{scl}}}}
+\def\tscl{{\color{OliveGreen}{t_{scl}}}}
+\def\bscl{{\color{OliveGreen}{b_{scl}}}}
+\def\escl{{\color{OliveGreen}{e_{scl}}}}
+\def\enscl{{\color{OliveGreen}{en_{scl}}}}
+\def\omscl{{\color{OliveGreen}{\Omega_{e}^{scl}}}}
+\def\muscl{{\color{OliveGreen}{\mu_{scl}}}}
+
+\newcommand{\angstrom}{\mbox{\normalfont\AA}}
+\newcommand{\Epar}{E_{\parallel}}
+\newcommand{\upar}{u_{\parallel}}
+\newcommand{\ue}{{{\bf{u}}_E}}
+\newcommand{\ugb}{{\bf{u}}_{\grad{B}}}
+%\def\o{c_{A0}}
+%\def\caao{c_{A0}^2}
+%\def\co{c_{0}}
+%\def\coo{c_{0}^2}
+%\def\cto{c_{t0}}
+%\def\ctto{c_{t0}^2}
+%EndDefinitions

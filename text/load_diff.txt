@@ -1,0 +1,9 @@
+21c21
+< EkinScl=-1/Q*M*Vscl*Vscl
+---
+> EkinScl=1;-1/Q*M*Vscl*Vscl
+74c74
+< end
+\ No newline at end of file
+---
+> end

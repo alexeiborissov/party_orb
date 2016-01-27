@@ -1,0 +1,553 @@
+1c1,3
+< PROGRAM SINGLE                                                   !(non- relativistic)
+---
+> 
+> 
+> PROGRAM SINGLE    !  15/09/2004  from Paul's program
+7c9
+<  !INTEGER, PARAMETER :: num = KIND(1.0)
+---
+>  
+9,10c11,12
+<  REAL(num), DIMENSION(3) :: RSTART,RSTARTKEEP, R1,R2
+<  REAL(num) :: T1,T2, H1,EPS, VPARSTART, mu, Erest,VPARSTARTKEEP     !(Ekin HERE IS ETOT)
+---
+>  REAL, DIMENSION(3) :: RSTART, RSTARTKEEP, R1, R2
+>  REAL :: T1, T2, H1, EPS, VPARSTART,MU,VPARSTARTKEEP
+12,18c14,30
+<  INTEGER :: EKinSteps, AlphaSteps, FullAngle
+<  INTEGER, DIMENSION(3) :: RSteps, pos_no_r
+<  REAL(num), DIMENSION(NKEEPMAX) :: TT 
+<  REAL(num), DIMENSION(NKEEPMAX,3) :: S, TOTAL
+<  INTEGER :: I,NKEEP,time_no
+<  REAL(num) :: Ekin,Alpha,Ekinlow,Ekinhigh,T1Keep,T2Keep
+<  REAL, PARAMETER :: pi = 3.14159265352
+---
+>  INTEGER :: EKinSteps, AlphaSteps, FullAngle !, itts
+>  INTEGER,DIMENSION(3) :: RSteps, pos_no_r
+>  REAL, DIMENSION(NKEEPMAX) :: TT 
+>  REAL, DIMENSION(NKEEPMAX,3) :: S, TOTAL
+>  INTEGER :: I,NKEEP,time_no,maxtime
+>  REAL :: Ekin, alpha, Ekinlow,Ekinhigh,T1Keep,T2Keep
+>  REAL, PARAMETER :: Pi=3.1415926535
+> 
+> maxtime=200
+> 
+> 
+> DO time_no = 200,maxtime,1 !change this back, only at 200 to test things are ok!
+> 
+> 
+>  OPEN (UNIT = 19, FILE = 'multipar.dat')
+> 
+> !Work out values of positions to start on.
+20,24d31
+< DO time_no = 199,188,-2                                            !(DO LOOP ADDED)
+<  OPEN (UNIT = 19, FILE = 'mu_multipar.dat')
+<  
+< !Call the rk sophisticated driver, which then works out the arrays for the
+<  !time steps and positions.
+28c35
+< !Adjust T2 to use loop value.
+---
+> !adjust T2 to use loop value
+34a42,43
+> !itts=RSTEPS(1)*RSTEPS(2)*RSTEPS(3)*AlphaSteps*EkinSteps
+> !PRINT*,"Total Number of Particles to be calculated",itts
+36,40c45
+< do pos_no_x = 0, RSTEPS(1),1
+< do pos_no_y = 0, RSTEPS(2),1
+< do pos_no_z = 0, RSTEPS(3),1
+< do pos_no_alpha = 1, AlphaSteps,1
+< do pos_no_ekin = 0, EkinSteps,1
+---
+> uniqueparticleid=0
+41a47,63
+> do pos_no_x = 0,RSTEPS(1),1
+> do pos_no_y = 0,RSTEPS(2),1
+> do pos_no_z = 1,RSTEPS(3),1
+> do pos_no_alpha =1,AlphaSteps,1
+> do pos_no_ekin = 0,EkinSteps,1 
+> 
+> !redefine rstart so that it uses the value from before, not the position of last particle!
+> pos_no_r=(/ pos_no_x,pos_no_y,pos_no_z /)
+> RSTART=R1+(R2-R1)*(((pos_no_r)*1.0d0)/RSteps)
+> 
+> uniqueparticleid=uniqueparticleid+1
+> 
+> if (time_no .eq. maxtime) then
+>   writervs=1
+> else
+>   writervs=0
+> endif  
+46,49c68,78
+< pos_no_r = (/pos_no_x,pos_no_y, pos_no_z/)
+< RSTART   = R1+(R2-R1)*((pos_no_r*1.0d0)/RSteps)
+< alpha    = pos_no_alpha/(AlphaSteps*1.0d0+FullAngle*1.0d0)*((1+FullAngle)*Pi/2.0d0)
+< Ekin     = (EKinHigh-EKinLow)*pos_no_ekin/(EkinSteps*1.0d0)
+---
+> 
+> alpha=pos_no_alpha/(AlphaSteps*1.0d0+FullAngle*1.0d0)*((1+FullAngle)*Pi/2.0d0)
+> Ekin=EKinLow+ (EKinHigh-EKinLow)*(pos_no_ekin)/(EkinSteps*1.0d0)
+> 
+> 
+> !Ekin=5.5e3
+> 
+> 
+> !alpha is pi/(no of steps+1) if fullangle is 1 (ie, steps from >=0 to >Pi (but not including Pi))
+> !alpha is pi/2/(no of steps) if fullangle is 0 (steps from 0 to Pi/2 inclusive)
+> !
+51a81,100
+> !debugging for variables needing updates
+> ! print*,"debug**************"
+> ! print*,nok,nbad
+> ! print*,R1,R2
+> ! print*,T1,T2,H1,EPS
+> ! print*,I,NKEEP
+> ! print*,"end debug**********"
+> 
+> 
+> 
+> !fix alpha for testing
+> !alpha=1.4
+> 
+> ! PRINT*,"Loop data"
+> ! PRINT*,"R",RSTART
+> ! PRINT*,"alpha",alpha,"Ekin",Ekin
+> 
+> 
+> !VPARSTART=pos_no_x*1.
+> 
+54c103,108
+< RSTARTKEEP=RSTART
+---
+> !RSTARTKEEP(1)=(1+pos_no_x/10.)*RSTART(1)
+> !RSTARTKEEP(2)=(1+pos_no_y/10.)*RSTART(2)
+> !RSTARTKEEP(1)=pos_no_x*1e6
+> !RSTARTKEEP(2)=pos_no_y*1e6
+> !RSTARTKEEP(3)=RSTART(3)
+> !RSTARTKEEP(3)=(1+pos_no_z/10.)*RSTART(3) (use value from input.dat)
+56,68c110
+< print*, 'I', I
+< print*, 'NKEEP', NKEEP
+< print*, 'nok', nok
+< print*, 'NBAD', NBAD
+<  print*,'T1=',T1
+<  print*,'T2=',T2
+<  print*,'H1=',H1
+<  print*,'EPS=',EPS
+<  print*,'Ekin=',Ekin
+<  print*, 'Alpha',Alpha
+<  !print*,'VPARSTART=',VPARSTART
+<  print*,'RSTART=',RSTART
+<  print*,'***********************************************************'
+---
+> !could also change mu, vpar here.
+70,73c112
+< RSTART=RSTART/L
+< RSTARTKEEP=RSTARTKEEP/L
+<  T1=T1/Tscl
+<  T2=T2/Tscl
+---
+> RSTARTKEEP=RSTART
+75,79c114,121
+<  print*,'T1=',T1
+<  print*,'T2=',T2
+<  !print*,'VPARSTART=',VPARSTART
+<  print*,'RSTART=',RSTART
+< print*, '***********************************************************'
+---
+> !  print*,'T1=',T1
+> !  print*,'T2=',T2
+> !  print*,'H1=',H1
+> !  print*,'EPS=',EPS
+> !  print*,'MU=',MU
+> !  print*,'VPARSTART=',VPARSTART
+> !  print*,'RSTART=',RSTART
+> !  print*,'***********************************************************'
+81d122
+< !convert energy from ev to joules
+83c124,129
+< Ekin = Ekin *abs(Q)
+---
+>  RSTART=RSTART/L
+>  RSTARTKEEP=RSTARTKEEP/L
+> ! VPARSTARTKEEP=VPARSTARTKEEP/Vscl
+> ! VPARSTART=VPARSTART/Vscl
+>  T1=T1/Tscl
+>  T2=T2/Tscl
+85c131,138
+< !Normalising Ekin
+---
+> !  Print*,'Ekin entered',Ekin
+> ! Convert energy from eV to J
+> Ekin=Ekin*abs(Q)
+> !  Print*,'Energy in Joules',Ekin 
+> 
+>  Ekin=Ekin/M/Vscl**2 !added by KG to normalise inital kinetic energy
+>                   !note initial kinetic energy was given in eV
+> !  Print*,'Energy nondimentionalised',Ekin
+87d139
+< Ekin = Ekin/M/Vscl**2
+90,92c142,144
+< !initial position and initial time.
+<  
+<  CALL CALC2_MU(MU,vparstart,Ekin,Alpha,RSTART,T1)
+---
+> !     initial position and initial time.
+> ! CALL CALC_MU(mu,Ekin,vparstart,RSTART,T1)
+>  CALL CALC2_MU(mu,vparstart,Ekin,alpha,RSTART,T1)
+94d145
+< 
+96a148
+> 
+100d151
+<   !Call write_data
+102c153,171
+< NKEEP = (NOK +NBAD)/NSTORE
+---
+> 
+>  NKEEP=(NOK+NBAD)/NSTORE
+> 
+> ! WRITE (19,*) RSTARTKEEP,VPARSTARTKEEP,MU,TT(NKEEP),RSTART,VPARSTART
+> !  PRINT*,"end S",S(NKEEP,:)
+> !  PRINT*,"end R", RSTART
+>  !this outputs: at start: x,y,z, vpar
+>  !              at end: mu, tt, x, y, z, vpar
+>  !all in non-dimensional form
+> 
+> 
+> !output final time variables
+> !inital time is delt with in calc2_mu
+> CALL WRITE_ENDTIME(RSTART,T2,MU,VPARSTART)
+> 
+> !itts=itts-1
+> !PRINT*,"Particles Left to calculate:",itts
+> ! PRINT*,"debug",pos_no_x,pos_no_y,pos_no_z
+> ! PRINT*,"debug",pos_no_alpha,pos_no_ekin
+111,114c180,182
+< END DO
+< !****************************************************************************************
+<  Contains
+< !****************************************************************************************
+---
+> CALL MAKEFILE(time_no)
+> 
+> end do
+115a184,186
+> !**********************************************************************
+>  Contains
+> !**********************************************************************
+124,125c195
+< !*****************************************************************************************
+< 
+---
+> !**********************************************************************
+127c197,198
+<  Namelist/inputdata/T1,T2,H1,EPS,Ekin,Alpha,RSTART
+---
+> !KG: new!
+>  Namelist/inputdata/T1,T2,H1,EPS,AlphaSteps,FullAngle,R1,R2,RSteps,EkinLow,EkinHigh,EkinSteps
+131a203,208
+> 
+> !check FullAngle is 0 or 1
+> IF (FullAngle .LT. 0 .OR. FullAngle .GT. 1) THEN
+>   PRINT*,'FullAngle must be 0 or 1. Check newinput.dat'
+>   STOP
+> ENDIF
+134d210
+< !*****************************************************************************************
+137c213,214
+< SUBROUTINE CALC2_MU(mu,vparstart,Ekin,alpha,RSTART,T1)
+---
+> !**********************************************************************
+>  Subroutine write_data
+139,144c216,239
+<   REAL(num), DIMENSION(3),INTENT(IN) :: RSTART
+<   REAL(num), INTENT(IN) :: T1, Ekin, Alpha
+<   REAL(num), INTENT(OUT) :: mu
+<   REAL(num), DIMENSION(3) :: B,El,a2,a3,a4,a5,a6,a7,a8,a9,a10,ue
+<   REAL(num) :: magB,vtot,vperp, vparstart,Erest
+<   
+---
+>  NKEEP=(NOK+NBAD)/NSTORE
+> 
+>  !Write the arrays TT and S to a file.
+> 
+> !commented out to reduce number of write 29/6/10
+> !  OPEN (UNIT = 10, FILE = 'data.dat')
+> !  DO I = 1, NKEEP
+> !   WRITE (10,*) TT(I),S(I,1),S(I,2),S(I,3),TOTAL(I,1)
+> !  ENDDO
+> !  CLOSE(10)
+> !  OPEN (UNIT = 10, FILE = 'energy.dat')
+> !  DO I = 1, NKEEP
+> !   WRITE (10,*) TT(I),TOTAL(I,1),TOTAL(I,2),TOTAL(I,3)
+> !  END DO
+> !  CLOSE(10)
+> ! 
+> !  OPEN (UNIT = 11, FILE = 'extra.dat')
+> !     WRITE (11,*) 'kept = ', NKEEP
+> !     DO I = 1, 3
+> !       WRITE (11,*) 'final value of R',I,' = ', RSTART(I)
+> !     ENDDO
+> !     WRITE (11,*) 'final parallel v = ', VPARSTART
+> !     WRITE (11,*) 'T runs from ', T1, ' to ', T2
+> !  CLOSE(11)
+146,148c241,270
+<  !calculate B at this point/time:
+<  CALL FIELDS(RSTART,T1,El,B,a2,a3,a4,a5,a6,a7,a8,a9,a10)
+<  !CALL FIELDS(RSTART,T1,El,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf)
+---
+>  End Subroutine write_data
+> 
+> !  SUBROUTINE CALC_MU(mu,Ekin,vparstart,RSTART,T1)
+> !   REAL, DIMENSION(3),INTENT(IN) :: RSTART
+> !   REAL, INTENT(IN) :: T1, Ekin, vparstart
+> !   REAL, INTENT(OUT) :: mu
+> !   REAL, DIMENSION(3) :: B ,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10
+> !   REAL :: magB
+> !   
+> !   !calculate B at this point/time:
+> !   CALL FIELDS(RSTART,T1,a1,B,a2,a3,a4,a5,a6,a7,a8,a9,a10)
+> !   
+> !   !calculate magnitude of B
+> !   magB=B(1)**2+B(2)**2+B(3)**2
+> !   magB=magB**(0.5)
+> !   
+> !   !calculate mu
+> !  mu=(Ekin-0.5*vparstart**2*M)/(magB)
+> !  
+> !  !some data dumps for checking
+> ! !  PRINT*, "In Calc_mu"
+> ! !  PRINT*, "Ekin:",Ekin,"; vparstart:",vparstart
+> ! !  PRINT*, "B",B
+> ! !  PRINT*, "magB", magB
+> ! !  PRINT*, "mu:",mu
+> ! !  PRINT*,"muB+0.5m*vpar^2",mu*magB+0.5*M*vparstart**2
+> ! !  PRINT*,"pitch angle",acos(vparstart/(sqrt(2*Ekin/M))) 
+> ! !  PRINT*, "leaving calc_mu"
+> !  
+> !  END SUBROUTINE
+150c272,279
+< !print*, "Rstart after", Rstart
+---
+>  SUBROUTINE CALC2_MU(mu,vparstart,Ekin,alpha,RSTART,T1)
+>   REAL, DIMENSION(3),INTENT(IN) :: RSTART
+>   REAL, INTENT(IN) :: T1, Ekin, alpha
+>   REAL, INTENT(OUT) :: mu,vparstart
+>   REAL, DIMENSION(3) :: B ,El,a2,a3,a4,a5,a6,a7,a8,a9,a10,ue
+>   REAL :: magB,vtot,vperp
+>   
+> 
+152c281,284
+<  !calculate magnitude of B
+---
+>   !calculate B at this point/time:
+>   CALL FIELDS(RSTART,T1,El,B,a2,a3,a4,a5,a6,a7,a8,a9,a10)
+>   
+>   !calculate magnitude of B
+154c286,288
+<   magB=sqrt(magB)
+---
+>   magB=magB**(0.5)
+> 
+>   ue=cross(El,B)/dot(B,B)  !*0.5
+156,202c290,293
+<  Erest = (M*c**2)*1.d0/abs(Q)
+< ! E X B drift
+< ue=cross(El,B)/dot(B,B)  !*0.5
+< 
+< 
+< vtot=sqrt(2.d0*Ekin-dot(ue,ue))
+< 
+< !vtot= sqrt(((2.d0*Ekin)/Erest)*c**2 - dot(ue,ue))   ! Normalised vtot 
+< !vtot= sqrt(((2.d0*c*Ekin)/Erest)*c - dot(ue,ue))      !28th
+< 
+< !print*, '2.d0*Ekin', 2.d0*Ekin
+< !print*, '2.d0*Ekin/Erest', 2.d0*Ekin/Erest
+< 
+< !VPERP = sqrt((((2.d0*Ekin))/511769.6629)*c**2 - dot(ue,ue))* sin(alpha)
+< !VPARSTART = sqrt((((2.d0*Ekin))/511769.6629)*c**2 - dot(ue,ue))* cos(alpha)
+< 
+< vparstart=vtot*cos(alpha)
+< print*, 'Vtot',vtot
+< print *, 'Alpha', Alpha
+< print*, 'cosalpha',cos(Alpha)
+< 
+<  vperp=vtot*sin(alpha)
+< 
+< !calculate mu
+< 
+<  mu=vperp**2/magB/2.0_num
+<  !mu  = (M*(Vscl*Vperp)**2)/(abs(Q)*magB*2d0)                             !This dont work ??
+<  !mu = (511769.6629*(Vscl*Vperp)**2)/(c**2*B0*magB*2.0)
+< 
+< !mu = (((((2.d0*Ekin))/511769.6629)*c**2 - dot(ue,ue))* sin(alpha)**2 )/ magB/ 2d0
+< print*, 'El', El
+< print*, 'B', B
+< print*, 'magB', magB
+< print*,"vtot",vtot
+< print*, 'Vparstart', vparstart
+<  print*,'ue', ue
+< print*, 'dot(ue,ue)',dot(ue,ue)
+< !print*, 'c',c
+< !print*, 'M',M
+< !print*, 'Q',q  
+< print*,'mu',mu
+< !print*, 'E0', E0
+< !print*, 'B0', B0
+< print*, 'Erest', Erest
+< !print*, '(L/Tscl/Vscl)', (L/Tscl/Vscl)
+< !print*, '(L/Vscl/Tscl)', (L/Vscl/Tscl)
+< !print*, '(1.0_num/L)', (1.0_num/L)
+---
+>   vtot=sqrt(2.0*Ekin-dot(ue,ue))
+> !print*,"vtot",vtot
+>   vparstart=vtot*cos(alpha)
+>   vperp=vtot*sin(alpha)
+204c295,298
+<  !print*,mu-(Ekin-0.5*vparstart**2-0.5*dot(ue,http://www.st-andrews.ac.uk/ue))/(magB)
+---
+>   !calculate mu
+> 
+>  mu=vperp**2/magB/2d0
+>  !print*,mu-(Ekin-0.5*vparstart**2-0.5*dot(ue,ue))/(magB)
+218c312
+<  WRITE (19,*) RStart,T1,Ekin,Alpha, mu*magB, 0.5*vparstart**2
+---
+>  WRITE (19,*) RStart,T1,Ekin,alpha, mu*magB, 0.5*vparstart**2
+224c318
+<  Subroutine write_data
+---
+> SUBROUTINE WRITE_ENDTIME(RSTART,T2,MU,VPARSTART)
+226c320,327
+<  NKEEP=(NOK+NBAD)/NSTORE
+---
+>     REAL,DIMENSION(3), INTENT(IN) :: RSTART
+>     REAL, INTENT(IN) :: T2, MU, VPARSTART
+>     REAL, DIMENSION(3) :: B ,El,a2,a3,a4,a5,a6,a7,a8,a9,a10,ue
+>     REAL :: EKin,magB,Epar,Eperp,vperp,vtot
+> 
+> !write position and time
+>   WRITE(19,*) RSTART, T2
+> !  WRITE(19,*) "RSTART,T2"
+228c329,422
+<  !Write the arrays TT and S to a file.
+---
+> !calculate magnetic and electric fields
+> CALL FIELDS(RSTART,T2,El,B,a2,a3,a4,a5,a6,a7,a8,a9,a10)
+>   magB=B(1)**2+B(2)**2+B(3)**2
+>   magB=magB**(0.5)
+>   ue=cross(El,B)/dot(B,B)
+>   Ekin=mu*magB+0.5*vparstart**2+0.5*dot(ue,ue) !addition of UE 
+>   alpha=acos(vparstart/(sqrt(2*Ekin-dot(ue,ue))))
+>   EPar=0.5*vparstart**2
+>   EPerp=mu*magB
+>   vperp=sqrt(2.0d0*Eperp)
+>   vtot=sqrt(2.0*Ekin-dot(ue,ue))
+> 
+> WRITE(19,*) Ekin,alpha,Eperp,Epar,vtot,vperp,vparstart
+> !WRITE(19,*) "Ekin,alpha,Eperp,Epar,vtot,vperp,vpar"
+> WRITE(19,*) El, B, magB
+> !WRITE(19,*) "El, B, magB"
+> END SUBROUTINE
+> 
+> SUBROUTINE MAKEFILE(time_no)
+> 
+>  INTEGER :: stat,timefile
+> ! REAL, DIMENSION(3) :: RSTART, RSTARTKEEP
+>  REAL,DIMENSION(3) :: a,b,d,e,f,h,j,k,m,n
+>  REAL,DIMENSION(2) :: c,g
+>  REAL ::              i,l,o
+>  CHARACTER(LEN=65) :: h1
+>  CHARACTER(LEN=79) :: h2
+>  CHARACTER(LEN=87) :: h3
+>  CHARACTER(LEN=41) :: h4
+>  CHARACTER(LEN=264) :: header_str
+>  !REAL, INTENT(IN) :: T2
+>  CHARACTER(LEN=30) :: fnameout
+>  INTEGER, INTENT(IN) :: time_no
+> 
+> ! INTEGER :: pos_no_x,pos_no_y,pos_no_z
+> ! REAL, DIMENSION(NKEEPMAX) :: TT 
+> ! REAL, DIMENSION(NKEEPMAX,3) :: S, TOTAL
+> ! INTEGER :: I,NKEEP
+> 
+> 
+>  OPEN (UNIT = 19, FILE = 'multipar.dat', FORM="FORMATTED", STATUS="OLD", ACTION="READ")
+> 
+> timefile=time_no
+> WRITE(fnameout,"('multipar_fmt_t',I3.3,'.dat')"),timefile
+> print*,"fnameout",fnameout
+> 
+> OPEN(UNIT=8,FILE=fnameout,FORM="FORMATTED",ACTION="WRITE")
+> !OPEN(UNIT=9,FILE='multipar_unf.dat',FORM="UNFORMATTED",STATUS="NEW",ACTION="WRITE")
+> 
+> !Write header for formatted file
+> h1='xstart ystart zstart t1 EKinStart alphaStart EperpStart EparStart'
+> h2=' vTotStart vPerpStart vParStart ExStart EyStart EzStart BxStart ByStart BzStart'
+> h3=' BStart mu xEnd yEnd zEnd t2 EKinEnd alphaEnd EperpEnd EparEnd vTotEnd vPerpEnd vParEnd'
+> h4=' ExEnd EyEnd EzEnd BxEnd ByEnd BzEnd BEnd'
+> !   1234567890123456789012345678901234567890123456789012345678901234567890123456789012345
+> !            10        20        30        40        50        60        70        80
+> 
+> header_str=h1 // h2 // h3 // h4
+> 
+> WRITE(UNIT=8,FMT='(A264)') header_str
+> 
+> DO
+> 
+> READ(UNIT=19,FMT=*,IOSTAT=stat) a
+> IF (stat .lt. 0) EXIT
+> READ(UNIT=19,FMT=*) b
+> READ(UNIT=19,FMT=*) c
+> READ(UNIT=19,FMT=*) d
+> READ(UNIT=19,FMT=*) e
+> READ(UNIT=19,FMT=*) f
+> READ(UNIT=19,FMT=*) g
+> READ(UNIT=19,FMT=*) h
+> READ(UNIT=19,FMT=*) i
+> READ(UNIT=19,FMT=*) j
+> READ(UNIT=19,FMT=*) k
+> READ(UNIT=19,FMT=*) l
+> READ(UNIT=19,FMT=*) m
+> READ(UNIT=19,FMT=*) n
+> READ(UNIT=19,FMT=*) o
+> 
+> IF (stat .eq. 0) THEN
+>   WRITE(UNIT=8,FMT='(37D23.15)') a,b,c,d,e,f,g,h,i,j,k,l,m,n,o
+> !  WRITE(UNIT=9) a,b,c,d,e,f,g,h,i,j,k,l,m,n,o
+> ELSE
+>   PRINT*, "file status was",stat
+>   EXIT
+> END IF
+> 
+> END DO
+> 
+> CLOSE(8)
+> !CLOSE(9)
+> CLOSE(19)
+> END SUBROUTINE
+230,248d423
+<  OPEN (UNIT = 10, FILE = 'data.dat')
+<  DO I = 1, NKEEP
+<   WRITE (10,*) TT(I),S(I,1),S(I,2),S(I,3),TOTAL(I,1)
+<  ENDDO
+<  CLOSE(10)
+<  OPEN (UNIT = 10, FILE = 'energy.dat')
+<  DO I = 1, NKEEP
+<   WRITE (10,*) TT(I),TOTAL(I,1),TOTAL(I,2),TOTAL(I,3)
+<  END DO
+<  CLOSE(10)
+< 
+<  OPEN (UNIT = 11, FILE = 'extra.dat')
+<     WRITE (11,*) 'kept = ', NKEEP
+<     DO I = 1, 3
+<       WRITE (11,*) 'final value of R',I,' = ', RSTART(I)
+<     ENDDO
+<     WRITE (11,*) 'final parallel v = ', VPARSTART
+<     WRITE (11,*) 'T runs from ', T1, ' to ', T2
+<  CLOSE(11)
+250,251d424
+<  End Subroutine write_data
+<   
