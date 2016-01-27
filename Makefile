@@ -12,8 +12,8 @@ FFLAGS = -O3 -J mod -fcheck=bounds -fno-range-check -g
 #FFLAGS = -O3
 
 # name of the output executable files?
-TARGETN = nrtest
-TARGETR =  rtest
+TARGETN = nrparty
+TARGETR =  rparty
 
 # --------------------------------------------------
 # Shouldn't need to touch below here
