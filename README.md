@@ -1,6 +1,6 @@
-JT 26/09/2013
+# 2016-01-27 party_orb code (JT)
 
-I have modified the non-relativistic code of Paolo Guiliani and others (documented in Guiliani et al. ApJ 635:pp636-646, 2005) to be in Makefile format.
+I have modified the non-relativistic code of Paolo Guiliani and others (documented in Guiliani et al. ApJ 635:pp636-646, 2005) to be relativistic, use a range of input environments and use simple Makefile.
 
 See manual (./manual) for full details of source code and IDL widgets.
 
@@ -29,4 +29,4 @@ Oh, the remaining subfolders contain stuff carried over from previous experiment
 ./text	contains snippets of other peoples work, which I'm just holding onto for now in case they become important later.
 Neither folder is affected by the Makefile.
 
-Good luck - any problems, email me at jamest@mcs.st-and.ac.uk.. Ciao!
+Good luck - any problems, email me at jwt9@st-andrews.ac.uk.. Ciao!
