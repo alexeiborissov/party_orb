@@ -39,7 +39,7 @@ OBJFILESN = global_mod.o mpi_routines.o products_mod.o lare_functions_mod.o l3dc
 	l3ds_fields_mod.o sdf_common.o sdf_job_info.o sdf_control.o sdf.o sdf_output_util.o\
 	sdf_input.o sdf_input_r4.o sdf_input_r8.o sdf_input_ru.o sdf_input_util.o l2ds_fields_mod.o\
 	sdf_input_cartesian.o sdf_input_cartesian_r4.o sdf_input_cartesian_r8.o sdf_input_cartesian_ru.o \
-	sdf_input_point.o sdf_input_point_r4.o sdf_input_point_r8.o sdf_input_point_ru.o\
+	sdf_input_point.o sdf_input_point_r4.o sdf_input_point_r8.o sdf_input_point_ru.o lare_fields_mod.o\
 	sdf_input_station.o sdf_input_station_r4.o sdf_input_station_r8.o sdf_input_station_ru.o\
 	sdf_output.o sdf_output_r4.o sdf_output_r8.o sdf_output_ru.o sdf_output_source.o sdf_source_info.o\
 	sdf_output_cartesian.o sdf_output_cartesian_r4.o sdf_output_cartesian_r8.o sdf_output_cartesian_ru.o\
@@ -52,7 +52,7 @@ OBJFILESR = global_mod.o mpi_routines.o products_mod.o lare_functions_mod.o l3dc
 	l3ds_fields_mod.o sdf_common.o sdf_job_info.o sdf_control.o sdf.o sdf_output_util.o\
 	sdf_input.o sdf_input_r4.o sdf_input_r8.o sdf_input_ru.o sdf_input_util.o l2ds_fields_mod.o\
 	sdf_input_cartesian.o sdf_input_cartesian_r4.o sdf_input_cartesian_r8.o sdf_input_cartesian_ru.o \
-	sdf_input_point.o sdf_input_point_r4.o sdf_input_point_r8.o sdf_input_point_ru.o\
+	sdf_input_point.o sdf_input_point_r4.o sdf_input_point_r8.o sdf_input_point_ru.o lare_fields_mod.o\
 	sdf_input_station.o sdf_input_station_r4.o sdf_input_station_r8.o sdf_input_station_ru.o\
 	sdf_output.o sdf_output_r4.o sdf_output_r8.o sdf_output_ru.o sdf_output_source.o sdf_source_info.o\
 	sdf_output_cartesian.o sdf_output_cartesian_r4.o sdf_output_cartesian_r8.o sdf_output_cartesian_ru.o\
@@ -65,8 +65,8 @@ OBJFILESR = global_mod.o mpi_routines.o products_mod.o lare_functions_mod.o l3dc
 FULLTARGETN = $(BINDIR)/$(TARGETN)
 FULLTARGETR = $(BINDIR)/$(TARGETR)
 
-VPATH = $(SRCDIR):$(OBJDIR):$(SRCDIR)/core:$(SRCDIR)/core/othermods:\
-	$(SRCDIR)/core/nr_rkmods:$(SRCDIR)/core/r_rkmods:$(SRCDIR)/core/io_cfd:$(SRCDIR)/core/io_sdf
+VPATH = $(SRCDIR):$(OBJDIR):$(SRCDIR)/core:$(SRCDIR)/core/othermods:$(SRCDIR)/core/nr_rkmods:\
+	$(SRCDIR)/core/r_rkmods:$(SRCDIR)/core/laremods:$(SRCDIR)/core/laremods/cfd:$(SRCDIR)/core/laremods/sdf
 
 DATDIRN = $(DATDIR)/DataN
 DATDIRR = $(DATDIR)/DataR
@@ -118,6 +118,7 @@ separatorfields_mod.o: separatorfields_mod.f90 global_mod.o products_mod.o
 CMTfields_mod.o: CMTfields_mod.f90 global_mod.o products_mod.o
 l3dc_fields_mod.o: l3dc_fields_mod.f90 lare_functions_mod.o global_mod.o iocommon.o iocontrol.o input.o input_cartesian.o #separatorfields_mod.o
 l2dc_fields_mod.o: l2dc_fields_mod.f90 lare_functions_mod.o global_mod.o iocommon.o iocontrol.o input.o input_cartesian.o #separatorfields_mod.o
+lare_fields_mod.o: lare_fields_mod.f90 lare_functions_mod.o global_mod.o
 sdf_common.o: sdf_common.f90 sdf_job_info.o global_mod.o
 sdf_job_info.o: sdf_job_info.f90
 sdf_source_info.o: sdf_source_info_dummy.f90
@@ -163,7 +164,7 @@ mpi_routines.o:mpi_routines.f90 global_mod.o l3dc_fields_mod.o l3ds_fields_mod.o
 l3ds_fields_mod.o: l3ds_fields_mod.f90 sdf_common.o global_mod.o sdf.o sdf_job_info.o lare_functions_mod.o
 l2ds_fields_mod.o: l2ds_fields_mod.f90 sdf_common.o global_mod.o sdf.o sdf_job_info.o lare_functions_mod.o
 bourdinfields_mod.o: bourdinfields_mod.f90 lare_functions_mod.o global_mod.o products_mod.o
-field_selector_mod.o: field_selector_mod.f90 l3dc_fields_mod.o lare_functions_mod.o CMTfields_mod.o separatorfields_mod.o testfields_mod.o bourdinfields_mod.o global_mod.o
+field_selector_mod.o: field_selector_mod.f90 lare_fields_mod.o lare_functions_mod.o CMTfields_mod.o separatorfields_mod.o testfields_mod.o bourdinfields_mod.o global_mod.o
 ##--NREL DEPENDENCIES
 nr_derivs_mod.o: nr_derivs_mod.f90 global_mod.o field_selector_mod.o products_mod.o 
 nr_rkck_mod.o: nr_rkck_mod.f90 nr_derivs_mod.o global_mod.o field_selector_mod.o

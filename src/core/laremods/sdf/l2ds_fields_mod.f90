@@ -263,24 +263,18 @@ IF (.NOT. restart_flag) THEN
 
       CASE(c_blocktype_plain_variable)
         IF (ndims /= c_ndims .OR. datatype /= sdf_num) CYCLE
-
         CALL sdf_read_plain_variable_info(sdf_handle, dims, str1, mesh_id)
-
         IF (.NOT.str_cmp(mesh_id, 'grid')) CYCLE
-	
-		
         IF (str_cmp(block_id, 'Rho')) THEN
 	   CYCLE 
 !          CALL check_dims(dims)
 !          CALL sdf_read_plain_variable(sdf_handle, rho, &
 !              cell_distribution, cell_subarray)
-
         ELSE IF (str_cmp(block_id, 'Energy')) THEN
  	   CYCLE
  !         CALL check_dims(dims)
  !         CALL sdf_read_plain_variable(sdf_handle, energy, &
  !             cell_distribution, cell_subarray)
-
         ELSE IF (str_cmp(block_id, 'Vx')) THEN
           dims = dims - 1
 	  print*, 'variable:', block_id
@@ -288,10 +282,8 @@ IF (.NOT. restart_flag) THEN
 	!  print*, 'dims:', dims
 	!  print*, nx
           ALLOCATE(data(-2:nx+2, -2:ny+2))
-	    
           CALL sdf_read_plain_variable(sdf_handle, data, &
               node_distribution, node_subarray)
-	     
           vx(0:nx,0:ny,0,frame)=data(0:nx,0:ny)
           DEALLOCATE(data)
         ELSE IF (str_cmp(block_id, 'Vy')) THEN
@@ -357,7 +349,6 @@ IF (.NOT. restart_flag) THEN
 	  !ENDDO 
 	  DEALLOCATE(data)
         END IF
-
       END SELECT
     END DO
 

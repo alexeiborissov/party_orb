@@ -1,13 +1,12 @@
 MODULE M_fields
   
   USE global
-  USE sep_fields
-  USE l3dc_fields
-  USE l2dc_fields
-  USE CMT_fields
-  USE test_fields
-  USE lare_functions
-  USE bourdin_fields
+  USE sep_fields, ONLY: SEPFIELDS
+  USE lare_fields, ONLY: LAREFIELDS
+  USE CMT_fields, ONLY: CMTFIELDS
+  USE test_fields, ONLY: TESTFIELDS
+  USE lare_functions, ONLY: str_cmp
+  USE bourdin_fields, ONLY: BOURDINFIELDS
   
   IMPLICIT NONE
 
@@ -47,9 +46,9 @@ SUBROUTINE FIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf,T1,T2)
     END IF
     GO TO 100 ! now actually head back and select case we want!
   CASE(1)
-    CALL L3DFIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf)
+    CALL LAREFIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf)
   CASE(2)
-    CALL L2DFIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf)
+    CALL LAREFIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf)
   CASE(3)
     CALL SEPFIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf)
   CASE(4)
