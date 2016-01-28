@@ -378,7 +378,7 @@ UNDERFLOW=0
     IF (R(3).LE.zee(1)) PRINT*, 'z below min z range'
     RETURN
    ENDIF
-   print*, H, HNEXT
+!   print*, H, HNEXT
    IF ((H.lt.EPS).AND.(HNEXT.lt.EPS)) THEN ! both this and the next step are unbelievably small so quit before we get stuck!
     print *, 'timestep shrink'
     IF (JTo4.eq.1) write(49,*), 'H'
