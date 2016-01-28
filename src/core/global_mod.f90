@@ -27,12 +27,11 @@ MODULE global
  !INTEGER, PARAMETER	:: NKEEPMAX = 10001
 
  INTEGER, PARAMETER	:: NSTORE =50, MAXTIME=200
- INTEGER		:: pn, nparticles, writervs
- INTEGER		:: JTo=1, JTo2=0, JTo3=0, JTO4=1	! JTo looks at variables encountering underflows
+ INTEGER, PARAMETER	:: JTo=1, JTo2=0, JTo3=0, JTO4=1	! JTo looks at variables encountering underflows
  								! 2& 3 output various things every NSTP
- LOGICAL		:: p_restart=.FALSE., p_stop=.FALSE.
+ INTEGER		:: pn, nparticles, writervs
  INTEGER		:: p_restart_no, p_stop_no
- 
+ LOGICAL		:: p_restart=.FALSE., p_stop=.FALSE. 
  LOGICAL		:: RANDOMISE_R, RANDOMISE_A, RANDOMISE_E
  
 ! CONSTANTS
@@ -44,7 +43,6 @@ MODULE global
  REAL(num), PARAMETER	:: Q = Qe, M = Me					!SELECT PROTON OR ELECTRON HERE
  REAL(num), PARAMETER	:: oneuponQ = 1.d0/Q, AQ = abs(Q), oneuponAQ= 1.d0/AQ
  REAL(num), PARAMETER	:: MoQ=M/Q, QoM=Q/M, oM=1.0d0/M, MoAQ=M/AQ, AQoM=AQ/M	!protons
- !REAL(num), PARAMETER	:: M = 9.1093826E-31_num, MoQ=M/Q, QoM=Q/M, oM=1.0d0/M, MoAQ=M/AQ, AQoM=AQ/M	!electrons
  REAL(num), PARAMETER	:: c = 2.99792458E8_num, oneuponc=1.0_num/c   ! speed of light
  REAL(num), PARAMETER	:: oneotwelve=1.0_num/12.0_num 
 
@@ -54,7 +52,7 @@ MODULE global
  !REAL(num), PARAMETER	:: Bscl = 1.0_num 		! 100 Gauss 	 (0.01)
  !REAL(num), PARAMETER	:: Escl = 1e3			! 10V/cm	 (1e3)
  !REAL(num), PARAMETER	:: Tscl = Lscl*Bscl/Escl        ! 100s	
- REAL(num), PARAMETER	:: Tscl = 1.0_num		! 100s	
+ REAL(num), PARAMETER	:: Tscl = 100.0_num		! 100s	
  REAL(num), PARAMETER	:: Escl = Lscl*Bscl/Tscl	! 10V/cm	 (1e3)
  REAL(num), PARAMETER	:: Vscl = Lscl/Tscl		! 10^7/10^2=10^5m/s=100km/s
  REAL(num), PARAMETER	:: Ekscl = M*Vscl*Vscl		! 10^10*9e-31=9e-21joules
@@ -96,11 +94,10 @@ MODULE global
  REAL(num), PARAMETER	:: xc=0.0_num, yc=0.0_num, zc=0.0_num		! center of flux ring
  REAL(num), PARAMETER	:: tau_n=1.0_num, tau=1.0_num*Tscl
 ! REAL(num), PARAMETER	:: xymult=10.0_num, zmult=1.0_num
-! REAL(num), PARAMETER	:: x_end=1.0_num*xymult, y_end=1.0_num*xymult, z_end=6.0_num*zmult
-  REAL(num), PARAMETER	:: x_end=0.9_num, y_end=0.9_num, z_end=3.0_num
+
  ! Lare field parameters
  ! (required by LARE modules)
- LOGICAL				:: evenlarefield=.TRUE.
+
  !REAL(num), DIMENSION(2), PARAMETER	:: xe=(/0.1_num,99.9_num/),ye=(/-0.1_num,99.9_num/),ze=(/-19.5_num,79.5_num/)
  REAL(num), DIMENSION(2), PARAMETER	:: xe=(/-0.9_num,0.9_num/),ye=(/-0.9_num,0.9_num/),ze=(/-10.00_num,10.0_num/)
  !REAL(num), PARAMETER			:: eta=0.001_num, jcrit=25.0_num

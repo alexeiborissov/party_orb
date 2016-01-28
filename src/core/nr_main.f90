@@ -33,126 +33,37 @@ IMPLICIT NONE
  l3dflag=.FALSE.
  l2dflag=.FALSE.
  analyticalflag=.FALSE.
- 
- 
- !DO time_no = 200,maxtime,1                                        !(DO LOOP ADDED)
- ! OPEN (UNIT = 19, FILE = dlocN//'multipar.dat', STATUS="REPLACE")
- ! !Call the rk sophisticated driver, to work out arrays for time steps and positions.
-  CALL read_param
 
- IF ((str_cmp(FMOD, "L3D")).OR.(str_cmp(FMOD, "l3d"))) THEN
-   ndims=3 
+ !read in the parameters from the input file
+ CALL read_param
+
+ ! initial setup options depend on chosen environment
+  IF ((str_cmp(FMOD, "L3D")).OR.(str_cmp(FMOD, "l3d"))) THEN
+   ndims=3
+   allocate(dims(ndims))
    l3dflag=.TRUE.
    CALL MPI_INIT(errcode)
    CALL mpi_initialise      ! mpi_routines.f90 
-   IF (evenlarefield) THEN
-    PRINT*, '..evaluating particle array against even lare grid..'
-    IF (((R1(1)/lscl).le.(-1.0_num*x_end)).OR.((R2(1)/lscl).ge.(x_end)))  THEN
-      WRITE(*,*) '..particles not within lare x extent '
-      gflag=.true.
-    ENDIF
-    IF (((R1(2)/lscl).le.(-1.0_num*y_end)).OR.((R2(2)/lscl).ge.(y_end))) THEN
-      WRITE(*,*) '..particles not within lare y extent '
-      gflag=.true.
-    ENDIF
-    IF (((R1(3)/lscl).le.(-1.0_num*z_end)).OR.((R2(3)/lscl).ge.(z_end))) THEN
-      WRITE(*,*) '..particles not within lare z extent '
-      gflag=.true.
-    ENDIF
-    IF (gflag) THEN
-      WRITE(*,*) 'terminating: particle grid out of bounds set in Lare.'
-      STOP
-    ELSE 
-      WRITE(*,*) 'fine!'
-    ENDIF 
-   ELSE
-    PRINT*, '..evaluating particle array against ODD lare grid..'
-    IF (((R1(1)/lscl).le.xe(1)).OR.((R2(1)/lscl).ge.xe(2)))  THEN
-      WRITE(*,*) '..particles not within lare x extent '
-      gflag=.true.
-    ENDIF
-    IF (((R1(2)/lscl).le.ye(1)).OR.((R2(2)/lscl).ge.ye(2)))  THEN
-      WRITE(*,*) '..particles not within lare y extent '
-      gflag=.true.
-    ENDIF
-    IF (((R1(3)/lscl).le.ze(1)).OR.((R2(3)/lscl).ge.ze(2)))  THEN
-      WRITE(*,*) '..particles not within lare z extent '
-      gflag=.true.
-    ENDIF
-    IF (gflag) THEN
-      WRITE(*,*) 'terminating: particle grid out of bounds set in Lare.'
-      STOP
-    ELSE 
-      WRITE(*,*) 'fine!'
-    ENDIF 
-   ENDIF
+   PRINT*, '..evaluating particle array against lare grid..' 
   ELSE IF ((str_cmp(FMOD, "L2D")).OR.(str_cmp(FMOD, "l2d"))) THEN
    l2dflag=.TRUE.
-   ndims=3
+   ndims=2
+   c_ndims=ndims
+   allocate(dims(ndims))
    CALL MPI_INIT(errcode)
    CALL mpi_initialise_2d
    IF ((R1(3).NE.R2(3)).OR.(RSTEPS(3).GT.1)) THEN
     PRINT*, 'Using Lare2d data - z position must be single valued!!'
     STOP
    ENDIF
-   IF (evenlarefield) THEN
-    PRINT*, '..evaluating particle array against even lare grid..'
-    IF (((R1(1)/lscl).le.(-1.0_num*x_end)).OR.((R2(1)/lscl).ge.(x_end)))  THEN
-      WRITE(*,*) '..particles not within lare x extent '
-      gflag=.true.
-    ENDIF
-    IF (((R1(2)/lscl).le.(-1.0_num*y_end)).OR.((R2(2)/lscl).ge.(y_end))) THEN
-      WRITE(*,*) '..particles not within lare y extent '
-      gflag=.true.
-    ENDIF
-    IF (gflag) THEN
-      WRITE(*,*) 'terminating: particle grid out of bounds set in Lare.'
-      STOP
-    ELSE 
-      WRITE(*,*) 'fine!'
-    ENDIF 
-   ELSE
-    PRINT*, '..evaluating particle array against ODD lare grid..'
-    IF (((R1(1)/lscl).le.xe(1)).OR.((R2(1)/lscl).ge.xe(2)))  THEN
-      WRITE(*,*) '..particles not within lare x extent '
-      gflag=.true.
-    ENDIF
-    IF (((R1(2)/lscl).le.ye(1)).OR.((R2(2)/lscl).ge.ye(2)))  THEN
-      WRITE(*,*) '..particles not within lare y extent '
-      gflag=.true.
-    ENDIF
-    IF (gflag) THEN
-      WRITE(*,*) 'terminating: particle grid out of bounds set in Lare.'
-      STOP
-    ELSE 
-      WRITE(*,*) 'fine!'
-    ENDIF 
-   ENDIF
   ELSE IF ((str_cmp(FMOD, "SEP")).OR.(str_cmp(FMOD, "sep"))) THEN
     analyticalflag=.TRUE.
     PRINT*, '..evaluating particle array against analytical field bounds..'
-    IF (((R1(1)/lscl).le.(-1.0_num*x_end)).OR.((R2(1)/lscl).ge.(x_end)))  THEN
-      WRITE(*,*) '..particles not within lare x extent '
-      gflag=.true.
-    ENDIF
-    IF (((R1(2)/lscl).le.(-1.0_num*y_end)).OR.((R2(2)/lscl).ge.(y_end))) THEN
-      WRITE(*,*) '..particles not within lare y extent '
-      gflag=.true.
-    ENDIF
-    IF (((R1(3)/lscl).le.(-1.0_num*z_end)).OR.((R2(3)/lscl).ge.(z_end))) THEN
-      WRITE(*,*) '..particles not within lare z extent '
-      gflag=.true.
-    ENDIF
-    IF (gflag) THEN
-      WRITE(*,*) 'terminating: particle grid out of bounds.'
-      STOP
-    ELSE 
-      WRITE(*,*) 'fine!'
-    ENDIF  
+    
   ELSE IF ((str_cmp(FMOD, "CMT")).OR.(str_cmp(FMOD, "cmt"))) THEN
-      !CMT setup?
+      !CMT setup? we don't technically need to load in variables yet
   ELSE IF ((str_cmp(FMOD, "TEST")).OR.(str_cmp(FMOD, "test"))) THEN
-      !CMT setup?
+      !test setup?
   ELSE IF ((str_cmp(FMOD, "BOR")).OR.(str_cmp(FMOD, "bor"))) THEN
    bourdinflag=.TRUE.
    CALL bour_ini      ! read in data
@@ -161,31 +72,31 @@ IMPLICIT NONE
    zee=(/myz(6),myz(nz-5)/)
    print*, '----'
    PRINT*, '..evaluating particle array against BOURDIN grid..'
-   IF ((R1(1)/lscl.le.xee(1)).OR.(R2(1)/lscl.ge.xee(2)))  THEN
+  ELSE
+   PRINT*, "incorrect module selection, choose from:"
+   PRINT*, "['l3d','l2d','sep','CMT','test','bour']"
+   STOP
+  END IF
+  
+  ! chose particle range xe/ye/ze -> particles must not start outside this range!
+   IF (((R1(1)/lscl).le.xe(1)).OR.((R2(1)/lscl).ge.xe(2)))  THEN
     WRITE(*,*) '..particles not within x extent '
     gflag=.true.
    ENDIF
-    IF ((R1(2)/lscl.le.yee(1)).OR.(R2(2)/lscl.ge.yee(2)))  THEN
+   IF (((R1(2)/lscl).le.ye(1)).OR.((R2(2)/lscl).ge.ye(2)))  THEN
     WRITE(*,*) '..particles not within y extent '
     gflag=.true.
    ENDIF
-   IF ((R1(3)/lscl.le.zee(1)).OR.(R2(3)/lscl.ge.zee(2)))  THEN
+   IF (((R1(3)/lscl).le.ze(1)).OR.((R2(3)/lscl).ge.ze(2)))  THEN
     WRITE(*,*) '..particles not within z extent '
     gflag=.true.
    ENDIF
    IF (gflag) THEN
-    WRITE(*,*) 'terminating: particle grid out of bounds of BOURDIN grid.'
+    WRITE(*,*) 'terminating: particle grid out of bounds.'
     STOP
    ELSE 
     WRITE(*,*) 'fine!'
-   ENDIF 
-  ELSE
-   PRINT*, "incorrect module selection, choose from:"
-   PRINT*, "['lare','sep','CMT','test','bour']"
-   STOP
-  END IF
-
-STOP
+   ENDIF
 
   DO i=1,3
    IF (RSTEPS(i).EQ.1) THEN 	;! if rsteps=1, 1/(rsteps-1)=1/0!!
@@ -194,18 +105,7 @@ STOP
     gds(i)=1.0_num/REAL(RSTEPS(i)-1)
    ENDIF
   ENDDO
-  !IF (RSTEPS(2).EQ.1) THEN
-  ! gdy=1.0_num 
-  !ELSE 
-  ! gdy=1.0_num/REAL(RSTEPS(2)-1)
-  !ENDIF
-  !IF (RSTEPS(3).EQ.1) THEN 
-  ! gdz=1.0_num 
-  !ELSE 
-  ! gdz=1.0_num/REAL(RSTEPS(3)-1)
-  !ENDIF
 
-  !gds=(/gdx,gdy,gdz/)
   lbox=(/R2(1)-R1(1),R2(2)-R1(2),R2(3)-R1(3)/)
 
   !pn=0
@@ -220,8 +120,7 @@ STOP
 
   writervs=1
 
-  IF (JTo4.eq.1) WRITE(finfile,"(A,'finishnr.tmp')"),dlocN
-  IF (JTo4.eq.1)  open(48,file=finfile,recl=1024,status='unknown')
+  IF (JTo4.eq.1)  open(48,file=dlocN//'finishnr.tmp',recl=1024,status='unknown')
   PRINT*, ''
   IF (p_restart) THEN
    PRINT*, '--RESTARTING p_grid--'

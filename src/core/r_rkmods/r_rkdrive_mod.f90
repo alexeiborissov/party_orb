@@ -73,6 +73,7 @@ UNDERFLOW=0
  IF (JTo3.eq.1)  open(57,file=tempfile3,recl=1024,status='unknown')
  
 !print*, "R=", R
+print*, T
  CALL DERIVS (T, R, DRDT, U, DUDT,GAMMA,DGAMMADT,MU,T1,T2)
  CALL FIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf,T1,T2)
  bb=B/sqrt(dot(B,B))
@@ -246,7 +247,7 @@ UNDERFLOW=0
     CALL DERIVS (T, R, DRDT, U, DUDT,GAMMA,DGAMMADT,MU,T1,T2)
     CALL FIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf,T1,T2)
  
-    IF (((bourdinflag).OR.(l3dflag)).AND.(SUM(E).EQ.0.0_num).AND.(SUM(B).EQ.0.0_num) &
+    IF (((bourdinflag).OR.(l3dflag).OR.(l2dflag)).AND.(SUM(E).EQ.0.0_num).AND.(SUM(B).EQ.0.0_num) &
  			      .AND.(SUM(DBDX).EQ.0.0_num).AND.(SUM(DBDY).EQ.0.0_num) &
 			      .AND.(SUM(DBDZ).EQ.0.0_num).AND.(SUM(DEDX).EQ.0.0_num) &
 			      .AND.(SUM(DEDY).EQ.0.0_num).AND.(SUM(DEDZ).EQ.0.0_num) &
@@ -322,31 +323,9 @@ UNDERFLOW=0
       RETURN                            !normal exit
     ENDIF
 
-   IF ((analyticalflag).AND.((abs(R(1)).GE.x_end).OR.(abs(R(2)).GE.y_end).OR.(abs(R(3)).GE.z_end))) THEN
-    IF (JTo4.eq.1) write(49,*), 'B'
-    print *, 'box extent exit'
-    DO I = 1,3
-      RSTART(I)=R(I)
-    ENDDO
-    T2 = T
-    USTART = U
-    GAMMASTART = GAMMA
-    RETURN
-   ENDIF
-! JT exit conditions: (is the box even or odd?)
-   !IF ((abs(R(1)).GE.x_end).OR.(abs(R(2)).GE.y_end).OR.(abs(R(3)).GE.z_end)) THEN
-   IF ((l3dflag).AND.(evenlarefield).AND.((abs(R(1)).GE.x_end).OR.(abs(R(2)).GE.y_end).OR.(abs(R(3)).GE.z_end))) THEN
-    IF (JTo4.eq.1) write(49,*), 'B'
-    print *, 'box extent exit'
-    DO I = 1,3
-      RSTART(I)=R(I)
-    ENDDO
-    T2 = T
-    USTART = U
-    GAMMASTART = GAMMA
-    RETURN
-   ENDIF
-   IF ((l3dflag).AND.(.NOT. evenlarefield).AND.((R(1).GE.xe(2)).OR.(R(1).LE.xe(1)) &	! beyond even lare range
+! JT exit conditions:
+   IF (((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR.(bourdinflag)) &
+   			    .AND.((R(1).GE.xe(2)).OR.(R(1).LE.xe(1)) &	! beyond simulation range
     			      .OR.(R(2).GE.ye(2)).OR.(R(2).LE.ye(1)) &
 			      .OR.(R(3).GE.ze(2)).OR.(R(3).LE.ze(1)))) THEN
     print *, 'box extent exit'
@@ -359,26 +338,7 @@ UNDERFLOW=0
     GAMMASTART = GAMMA
     RETURN
    ENDIF
-   IF ((bourdinflag).AND.((R(1).GE.xee(2)).OR.(R(1).LE.xee(1)) &
-    			      .OR.(R(2).GE.yee(2)).OR.(R(2).LE.yee(1)) &
-			      .OR.(R(3).GE.zee(2)).OR.(R(3).LE.zee(1)))) THEN	! beyond bourdin range
-    print *, 'box extent exit'
-    IF (JTo4.eq.1) write(49,*), 'B'
-    DO I = 1,3
-      RSTART(I)=R(I)
-    ENDDO
-    T2 = T
-    USTART = U
-    GAMMASTART = GAMMA
-    IF (R(1).GE.xee(2)) PRINT*, 'x above max x range'
-    IF (R(1).LE.xee(1)) PRINT*, 'x below min x range'
-    IF (R(2).GE.yee(2)) PRINT*, 'y above max y range'
-    IF (R(2).LE.yee(1)) PRINT*, 'y below min y range'
-    IF (R(3).GE.zee(2)) PRINT*, 'z above max z range'
-    IF (R(3).LE.zee(1)) PRINT*, 'z below min z range'
-    RETURN
-   ENDIF
-!   print*, H, HNEXT
+   
    IF ((H.lt.EPS).AND.(HNEXT.lt.EPS)) THEN ! both this and the next step are unbelievably small so quit before we get stuck!
     print *, 'timestep shrink'
     IF (JTo4.eq.1) write(49,*), 'H'
@@ -442,7 +402,8 @@ UNDERFLOW=0
     RETURN 
    ENDIF
    
-   IF (HNEXT.lt.0.01*(T2-T1)) THEN	! timestep increase limited..
+   !print*, H
+   IF (HNEXT.lt.0.001*(T2-T1)) THEN	! timestep increase limited..(so that we actually see some outputs!)
     H=HNEXT
    ENDIF
    

@@ -16,9 +16,9 @@ MODULE mpi_routines
 
 CONTAINS
 
-  SUBROUTINE mpi_initialise
-!  Subroutine which sets up the Lare3d grids from either cfd or sdf files, and related settings
-
+ SUBROUTINE mpi_initialise
+!  Subroutine which sets up the Lare grids from either cfd or sdf files, and related settings
+!  -> much of this was cobbled together from lare subroutines and functions. My Bad.
     INTEGER :: icoord
     INTEGER :: x_coords, y_coords, z_coords
     LOGICAL :: periods(3), reorder, ce, se, ce2, se2
@@ -202,9 +202,9 @@ CONTAINS
    !ALLOCATE(temperature(0:nx,0:ny,0:nz))
    !ALLOCATE(pressure(0:nx,0:ny,0:nz))   gflag=.false.
   
-  WRITE (istring,fmt1) mysnap 			! converting integer to string using an 'internal file'
-  cfdloc=trim(adjustl(sloc))//trim(istring)//filetype1		! store new filename
-  sdfloc=trim(adjustl(sloc))//trim(istring)//filetype2		! store new filename
+  WRITE (istring,fmt1) mysnap 			! convert first snapshot number to filename
+  cfdloc=trim(adjustl(sloc))//trim(istring)//filetype1	! query both cfd and sdf formats		
+  sdfloc=trim(adjustl(sloc))//trim(istring)//filetype2
   
   ce=.FALSE.
   se=.FALSE.
@@ -212,7 +212,7 @@ CONTAINS
   INQUIRE(file=TRIM(cfdloc),exist=ce)
   INQUIRE(file=TRIM(sdfloc),exist=se)
   
-
+  ! figure out which filetypes exist if any:
   IF ((ce).NEQV.(se)) THEN	! do flags differ? (if so, one is ON!)
    IF (ce) THEN
     print*, 'found old lare3d file (cfd)'
@@ -225,259 +225,221 @@ CONTAINS
     CALL mpi_create_types_3d
     CALL L3DSGRID()
    END IF
- ELSE
-  IF (ce.AND.se) THEN
-   print*, 'ERROR: BOTH cfd and sfd formats at same location, terminating'
-   STOP
   ELSE
-  !IF ((.NOT.ce).AND.(.NOT.se)) THEN
-   print*, 'ERROR: NEITHER cfd and sfd formats found at location, terminating'
-   print*, '-OR SOMETHING ELSE HAS GONE HORRIBLY WRONG-'
-   STOP
-  END IF
- ENDIF
-   
-   WRITE(*,101)  'checking grid extent: '
-   
-   IF (evenlarefield) THEN
-    WRITE(*,101,advance='no') '..EVEN lare grid used..'
-    IF (.not. ((maxval(myx).ge.x_end).OR.(minval(myx).le.(-1.0_num*x_end)))) THEN
-      WRITE(*,*) '..lare x extent < x_end - check boundaries are consistent'
-      gflag=.true.
-    ENDIF
-    IF (.not. ((maxval(myy).ge.y_end).OR.(minval(myy).le.(-1.0_num*y_end)))) THEN
-      WRITE(*,*) '..lare y extent < y_end - check boundaries are consistent'
-      gflag=.true.
-    ENDIF
-    IF (.not. ((maxval(myz).ge.z_end).OR.(minval(myz).le.(-1.0_num*z_end)))) THEN
-      WRITE(*,*) '..lare z extent < z_end - check boundaries are consistent'
-      gflag=.true.
-    ENDIF
-    IF (gflag) THEN
-      WRITE(*,*) 'terminating as fields module will not work beyond bounds set in Lare.'
-      STOP
-    ELSE 
-      WRITE(*,101,advance='no') 'fine!'
-    ENDIF 
+   IF (ce.AND.se) THEN
+    print*, 'ERROR: BOTH cfd and sfd formats at same location, terminating'
+    STOP
    ELSE
-    WRITE(*,101,advance='no') '..ODD lare grid used..'
-    IF (.not. ((maxval(myx).ge.xe(2)).OR.(minval(myx).le.xe(1)))) THEN
-      WRITE(*,*) '..particle start positions beyond specified lare grid range in x'
-      gflag=.true.
-    ENDIF
-    IF (.not. ((maxval(myy).ge.ye(2)).OR.(minval(myy).le.ye(1)))) THEN
-      WRITE(*,*) '..particle start positions beyond specified lare grid range in y'
-      gflag=.true.
-    ENDIF
-    IF (.not. ((maxval(myz).ge.ze(2)).OR.(minval(myz).le.ze(1)))) THEN
-      WRITE(*,*) '..particle start positions beyond specified lare grid range in z'
-      gflag=.true.
-    ENDIF
-    IF (gflag) THEN
-      WRITE(*,*) 'terminating: particles cannot begin beyond bounds set by Lare fields.'
-      STOP
-    ELSE 
-      WRITE(*,101,advance='no') 'fine!'
-    ENDIF 
-   ENDIF
-    !WRITE(*,101,advance='no')  '...done!'
-    WRITE(*,*)  '..now loading in Lare variables..'
-   
-   frame=0
-   DO WHILE (frame.LT.(nframes))
-    WRITE (istring,fmt1) mysnap+frame 			! converting integer to string using an 'internal file'
-    cfdloc=trim(adjustl(sloc))//trim(istring)//filetype1		! store new filename
-    sdfloc=trim(adjustl(sloc))//trim(istring)//filetype2		! store new filename
+    print*, 'ERROR: NEITHER cfd and sfd formats found at location, terminating'
+    print*, '-OR SOMETHING ELSE HAS GONE HORRIBLY WRONG-'
+    STOP
+   END IF
+  ENDIF
   
-    IF (ce) THEN
-      INQUIRE(file=TRIM(cfdloc),exist=ce2)
-      IF (ce2) THEN
-       CALL L3DCINIFIELDS()
-      ELSE
-       PRINT*, 'file "', TRIM(cfdloc), '" missing'
-      ENDIF
+  ! if the first file exists, compare lare and particle grids - particle grid must be shorter than lare grid (for obvious reasons). 
+  WRITE(*,101)  'checking grid extent: '
+  IF (.not. ((maxval(myx).ge.xe(2)).OR.(minval(myx).le.xe(1)))) THEN
+   WRITE(*,*) '..particle start positions beyond specified lare grid range in x'
+   gflag=.true.
+  ENDIF
+  IF (.not. ((maxval(myy).ge.ye(2)).OR.(minval(myy).le.ye(1)))) THEN
+   WRITE(*,*) '..particle start positions beyond specified lare grid range in y'
+   gflag=.true.
+  ENDIF
+  IF (.not. ((maxval(myz).ge.ze(2)).OR.(minval(myz).le.ze(1)))) THEN
+   WRITE(*,*) '..particle start positions beyond specified lare grid range in z'
+   gflag=.true.
+  ENDIF
+  IF (gflag) THEN
+   WRITE(*,*) 'terminating: particles cannot begin beyond bounds set by Lare fields.'
+   STOP
+  ELSE 
+   WRITE(*,101,advance='no') 'fine!'
+  ENDIF 
+ 
+  WRITE(*,*)  '..now loading in Lare variables..'
+  frame=0
+  DO WHILE (frame.LT.(nframes))
+   WRITE (istring,fmt1) mysnap+frame 			! converting integer to string using an 'internal file'
+   cfdloc=trim(adjustl(sloc))//trim(istring)//filetype1		! store new filename
+   sdfloc=trim(adjustl(sloc))//trim(istring)//filetype2		
+  
+   IF (ce) THEN
+    INQUIRE(file=TRIM(cfdloc),exist=ce2)
+    IF (ce2) THEN
+      CALL L3DCINIFIELDS()
+    ELSE
+      PRINT*, 'file "', TRIM(cfdloc), '" missing'
     ENDIF
-    IF (se) THEN
-      INQUIRE(file=TRIM(sdfloc),exist=se2)
-      IF (se2) THEN
-       CALL L3DSINIFIELDS()
-      ELSE
-       PRINT*, 'file "', TRIM(sdfloc), '" missing'
-      ENDIF
+   ENDIF
+   IF (se) THEN
+    INQUIRE(file=TRIM(sdfloc),exist=se2)
+    IF (se2) THEN
+      CALL L3DSINIFIELDS()
+    ELSE
+      PRINT*, 'file "', TRIM(sdfloc), '" missing'
     ENDIF
+   ENDIF
     frame=frame+1
-   END DO
-   
-    IF (rank == 0) start_time = MPI_WTIME()
+  END DO 
+  IF (rank == 0) start_time = MPI_WTIME()
 
-
-  END SUBROUTINE mpi_initialise
+ END SUBROUTINE mpi_initialise
 !----------------------------------------------------!
-  SUBROUTINE mpi_initialise_2d
+ SUBROUTINE mpi_initialise_2d
 !+ Initialisation for 2d Lare2d environment setup.  
 
-    INTEGER :: icoord
-    INTEGER :: x_coords, y_coords
-    LOGICAL :: periods(2), reorder, ce, se, ce2, se2
-    INTEGER :: starts(2), sizes(2), subsizes(2)
-    INTEGER :: nx0, ny0
-    INTEGER :: nxp, nyp
-    INTEGER :: cx, cy
+  INTEGER :: icoord
+  INTEGER :: x_coords, y_coords
+  LOGICAL :: periods(2), reorder, ce, se, ce2, se2
+  INTEGER :: starts(2), sizes(2), subsizes(2)
+  INTEGER :: nx0, ny0
+  INTEGER :: nxp, nyp
+  INTEGER :: cx, cy
 
 101 format(a) 
 
-    CALL MPI_COMM_SIZE(MPI_COMM_WORLD, nproc, errcode)
+  CALL MPI_COMM_SIZE(MPI_COMM_WORLD, nproc, errcode)
     
-    ALLOCATE(coordinates(c_ndims), n_global_min(c_ndims), n_global_max(c_ndims))
-    ALLOCATE(global_dims(c_ndims))
-    ALLOCATE(extents(2*c_ndims))
+  ALLOCATE(coordinates(c_ndims), n_global_min(c_ndims), n_global_max(c_ndims))
+  ALLOCATE(global_dims(c_ndims))
+  ALLOCATE(extents(2*c_ndims))
 
-    dims = (/ nprocy, nprocx /)
-    global_dims = (/nx_global, ny_global/)
+  dims = (/ nprocy, nprocx /)
+  global_dims = (/nx_global, ny_global/)
 
-    IF (MAX(dims(1), 1)*MAX(dims(2), 1) .GT. nproc) THEN
-      dims = 0
-      IF (rank .EQ. 0) THEN
-        PRINT *, "Too many processors requested in override."
-        PRINT *, "Reverting to automatic decomposition."
-        PRINT *, "******************************************"
-        PRINT *, ""
-      END IF
+  IF (MAX(dims(1), 1)*MAX(dims(2), 1) .GT. nproc) THEN
+    dims = 0
+    IF (rank .EQ. 0) THEN
+      PRINT *, "Too many processors requested in override."
+      PRINT *, "Reverting to automatic decomposition."
+      PRINT *, "******************************************"
+      PRINT *, ""
     END IF
+  END IF
 
-    CALL MPI_DIMS_CREATE(nproc, ndims, dims, errcode)
+  CALL MPI_DIMS_CREATE(nproc, ndims, dims, errcode)
 
-    nprocx = dims(2)
-    nprocy = dims(1)
+  nprocx = dims(2)
+  nprocy = dims(1)
 
-    periods=.FALSE.
-    reorder=.FALSE.
+  periods=.FALSE.
+  reorder=.FALSE.
 
 
-    CALL MPI_CART_CREATE(MPI_COMM_WORLD, ndims, dims, periods, &
+  CALL MPI_CART_CREATE(MPI_COMM_WORLD, ndims, dims, periods, &
         reorder, comm, errcode)
 
-    CALL MPI_COMM_RANK(comm, rank, errcode)
-    CALL MPI_CART_COORDS(comm, rank, 2, coordinates, errcode)
-    CALL MPI_CART_SHIFT(comm, 1, 1, proc_x_min, proc_x_max, errcode)
-    CALL MPI_CART_SHIFT(comm, 0, 1, proc_y_min, proc_y_max, errcode)
+  CALL MPI_COMM_RANK(comm, rank, errcode)
+  CALL MPI_CART_COORDS(comm, rank, 2, coordinates, errcode)
+  CALL MPI_CART_SHIFT(comm, 1, 1, proc_x_min, proc_x_max, errcode)
+  CALL MPI_CART_SHIFT(comm, 0, 1, proc_y_min, proc_y_max, errcode)
 
+  cx = coordinates(2)
+  cy = coordinates(1)
 
-    cx = coordinates(2)
-    cy = coordinates(1)
+  ! Create the subarray for this problem: subtype decribes where this
+  ! process's data fits into the global picture.
 
-    ! Create the subarray for this problem: subtype decribes where this
-    ! process's data fits into the global picture.
+  nx0 = nx_global / nprocx
+  ny0 = ny_global / nprocy
 
-    nx0 = nx_global / nprocx
-    ny0 = ny_global / nprocy
+  nx = nx0
+  ny = ny0
 
-    nx = nx0
-    ny = ny0
+  ! If the number of gridpoints cannot be exactly subdivided then fix
+  ! The first nxp processors have nx0 grid points
+  ! The remaining processors have nx0+1 grid points
+  IF (nx0 * nprocx .NE. nx_global) THEN
+    nxp = (nx0 + 1) * nprocx - nx_global
+    IF (cx .GE. nxp) nx = nx0 + 1
+  ELSE
+    nxp = nprocx
+  ENDIF
+  IF (ny0 * nprocy .NE. ny_global) THEN
+    nyp = (ny0 + 1) * nprocy - ny_global
+    IF (cy .GE. nyp) ny = ny0 + 1
+  ELSE
+    nyp = nprocy
+  ENDIF
 
-    ! If the number of gridpoints cannot be exactly subdivided then fix
-    ! The first nxp processors have nx0 grid points
-    ! The remaining processors have nx0+1 grid points
-    IF (nx0 * nprocx .NE. nx_global) THEN
-      nxp = (nx0 + 1) * nprocx - nx_global
-      IF (cx .GE. nxp) nx = nx0 + 1
-    ELSE
-      nxp = nprocx
-    ENDIF
-    IF (ny0 * nprocy .NE. ny_global) THEN
-      nyp = (ny0 + 1) * nprocy - ny_global
-      IF (cy .GE. nyp) ny = ny0 + 1
-    ELSE
-      nyp = nprocy
-    ENDIF
+  ALLOCATE(cell_nx_mins(0:nprocx-1), cell_nx_maxs(0:nprocx-1))
+  ALLOCATE(cell_ny_mins(0:nprocy-1), cell_ny_maxs(0:nprocy-1))
 
+  ! Set up the starting point for my subgrid (assumes arrays start at 0)
+  DO icoord = 0, nxp - 1
+   cell_nx_mins(icoord) = icoord * nx0 + 1
+   cell_nx_maxs(icoord) = (icoord + 1) * nx0
+  END DO
+  DO icoord = nxp, nprocx - 1
+   cell_nx_mins(icoord) = nxp * nx0 + (icoord - nxp) * (nx0 + 1) + 1
+   cell_nx_maxs(icoord) = nxp * nx0 + (icoord - nxp + 1) * (nx0 + 1)
+  END DO
 
-    ALLOCATE(cell_nx_mins(0:nprocx-1), cell_nx_maxs(0:nprocx-1))
-    ALLOCATE(cell_ny_mins(0:nprocy-1), cell_ny_maxs(0:nprocy-1))
+  DO icoord = 0, nyp - 1
+   cell_ny_mins(icoord) = icoord * ny0 + 1
+   cell_ny_maxs(icoord) = (icoord + 1) * ny0
+  END DO
+  DO icoord = nyp, nprocy - 1
+   cell_ny_mins(icoord) = nyp * ny0 + (icoord - nyp) * (ny0 + 1) + 1
+   cell_ny_maxs(icoord) = nyp * ny0 + (icoord - nyp + 1) * (ny0 + 1)
+  END DO  
 
-    ! Set up the starting point for my subgrid (assumes arrays start at 0)
+  n_global_min(1) = cell_nx_mins(cx) - 1
+  n_global_max(1) = cell_nx_maxs(cx)
 
-    DO icoord = 0, nxp - 1
-      cell_nx_mins(icoord) = icoord * nx0 + 1
-      cell_nx_maxs(icoord) = (icoord + 1) * nx0
-    END DO
-    DO icoord = nxp, nprocx - 1
-      cell_nx_mins(icoord) = nxp * nx0 + (icoord - nxp) * (nx0 + 1) + 1
-      cell_nx_maxs(icoord) = nxp * nx0 + (icoord - nxp + 1) * (nx0 + 1)
-    END DO
+  n_global_min(2) = cell_ny_mins(cy) - 1
+  n_global_max(2) = cell_ny_maxs(cy)
 
-    DO icoord = 0, nyp - 1
-      cell_ny_mins(icoord) = icoord * ny0 + 1
-      cell_ny_maxs(icoord) = (icoord + 1) * ny0
-    END DO
-    DO icoord = nyp, nprocy - 1
-      cell_ny_mins(icoord) = nyp * ny0 + (icoord - nyp) * (ny0 + 1) + 1
-      cell_ny_maxs(icoord) = nyp * ny0 + (icoord - nyp + 1) * (ny0 + 1)
-    END DO
+  nx = n_global_max(1) - n_global_min(1)
+  ny = n_global_max(2) - n_global_min(2)
 
-  
+  IF (cx .LT. nxp) THEN
+   starts(1) = cx * nx0
+  ELSE
+   starts(1) = nxp * nx0 + (cx - nxp) * (nx0 + 1)
+  ENDIF
+  IF (cy .LT. nyp) THEN
+   starts(2) = cy * ny0
+  ELSE
+   starts(2) = nyp * ny0 + (cy - nyp) * (ny0 + 1)
+  ENDIF
 
-    n_global_min(1) = cell_nx_mins(cx) - 1
-    n_global_max(1) = cell_nx_maxs(cx)
+  ! the grid sizes
+  subsizes = (/ nx+1, ny+1 /)
+  sizes = (/ nx_global+1, ny_global+1 /)
 
-    n_global_min(2) = cell_ny_mins(cy) - 1
-    n_global_max(2) = cell_ny_maxs(cy)
+  ! set up and commit the subarray type
+  CALL MPI_TYPE_CREATE_SUBARRAY(ndims, sizes, subsizes, starts, &
+		 MPI_ORDER_FORTRAN, mpireal, subtype, errcode)
 
+  CALL MPI_TYPE_COMMIT(subtype, errcode)
 
-    nx = n_global_max(1) - n_global_min(1)
-    ny = n_global_max(2) - n_global_min(2)
+ ! Calculate initial displacement value:
+ ! nx, ny, nz, (xb, yb, zb, time) * size of float
+  initialdisp = 12 + (nx_global + ny_global + 3) * num
 
-
-
-    IF (cx .LT. nxp) THEN
-      starts(1) = cx * nx0
-    ELSE
-      starts(1) = nxp * nx0 + (cx - nxp) * (nx0 + 1)
-    ENDIF
-    IF (cy .LT. nyp) THEN
-      starts(2) = cy * ny0
-    ELSE
-      starts(2) = nyp * ny0 + (cy - nyp) * (ny0 + 1)
-    ENDIF
-
-
-    ! the grid sizes
-    subsizes = (/ nx+1, ny+1 /)
-    sizes = (/ nx_global+1, ny_global+1 /)
-
-    ! set up and commit the subarray type
-    CALL MPI_TYPE_CREATE_SUBARRAY(ndims, sizes, subsizes, starts, &
-        MPI_ORDER_FORTRAN, mpireal, subtype, errcode)
-
-    CALL MPI_TYPE_COMMIT(subtype, errcode)
-
-    ! Calculate initial displacement value:
-    ! nx, ny, nz, (xb, yb, zb, time) * size of float
-    initialdisp = 12 + (nx_global + ny_global + 3) * num
-
-   nx=nx_global
-   ny=ny_global
-
+  nx=nx_global
+  ny=ny_global
    
-   !ALLOCATE(rho(0:nx,0:ny,0:nz))
-   !ALLOCATE(energy(0:nx,0:ny,0:nz)) 
-   ALLOCATE(vx(0:nx,0:ny,0:0,0:nframes-1))
-   ALLOCATE(vy(0:nx,0:ny,0:0,0:nframes-1))
-   ALLOCATE(vz(0:nx,0:ny,0:0,0:nframes-1))
-   ALLOCATE(bx(0:nx,0:ny,0:0,0:nframes-1))
-   ALLOCATE(by(0:nx,0:ny,0:0,0:nframes-1))
-   ALLOCATE(bz(0:nx,0:ny,0:0,0:nframes-1))
-   ALLOCATE(myx(0:nx))
-   ALLOCATE(myy(0:ny))
-   ALLOCATE(ltimes(0:nframes-1))
-
-   !ALLOCATE(eta(0:nx,0:ny,0:nz))
-   !ALLOCATE(temperature(0:nx,0:ny,0:nz))
-   !ALLOCATE(pressure(0:nx,0:ny,0:nz))   gflag=.false.
+  !ALLOCATE(rho(0:nx,0:ny,0:nz))
+  !ALLOCATE(energy(0:nx,0:ny,0:nz)) 
+  ALLOCATE(vx(0:nx,0:ny,0:0,0:nframes-1))
+  ALLOCATE(vy(0:nx,0:ny,0:0,0:nframes-1))
+  ALLOCATE(vz(0:nx,0:ny,0:0,0:nframes-1))
+  ALLOCATE(bx(0:nx,0:ny,0:0,0:nframes-1))
+  ALLOCATE(by(0:nx,0:ny,0:0,0:nframes-1))
+  ALLOCATE(bz(0:nx,0:ny,0:0,0:nframes-1))
+  ALLOCATE(myx(0:nx))
+  ALLOCATE(myy(0:ny))
+  ALLOCATE(ltimes(0:nframes-1))
+  !ALLOCATE(eta(0:nx,0:ny,0:nz))
+  !ALLOCATE(temperature(0:nx,0:ny,0:nz))
+  !ALLOCATE(pressure(0:nx,0:ny,0:nz))   gflag=.false.
   
-  WRITE (istring,fmt1) mysnap 			! converting integer to string using an 'internal file'
-  cfdloc=trim(adjustl(sloc))//trim(istring)//filetype1		! store new filename
-  sdfloc=trim(adjustl(sloc))//trim(istring)//filetype2		! store new filename
+  WRITE (istring,fmt1) mysnap 			! convert first snapshot number to filename
+  cfdloc=trim(adjustl(sloc))//trim(istring)//filetype1		! create and query filenames
+  sdfloc=trim(adjustl(sloc))//trim(istring)//filetype2
   
   ce=.FALSE.
   se=.FALSE.
@@ -496,65 +458,41 @@ CONTAINS
     ALLOCATE(local_dims(c_ndims))
     local_dims = (/nx, ny/)
     CALL mpi_create_types_2d
-    !print*, 'create_types_finishes'
     CALL L2DSGRID()
    END IF
- ELSE
-  IF (ce.AND.se) THEN
-   print*, 'ERROR: BOTH cfd and sfd formats at same location, terminating'
-   STOP
   ELSE
-  !IF ((.NOT.ce).AND.(.NOT.se)) THEN
-   print*, 'ERROR: NEITHER cfd and sfd formats found at location, terminating'
-   print*, '-OR SOMETHING ELSE HAS GONE HORRIBLY WRONG-'
-   STOP
-  END IF
- ENDIF
-   
-   WRITE(*,101)  'checking grid extent: '
-   
-   IF (evenlarefield) THEN
-    WRITE(*,101,advance='no') '..EVEN lare grid used..'
-    IF (.not. ((maxval(myx).ge.x_end).OR.(minval(myx).le.(-1.0_num*x_end)))) THEN
-      !print*, maxval(myx), x_end
-      WRITE(*,*) '..lare x extent < x_end - check boundaries are consistent'
-      gflag=.true.
-    ENDIF
-    IF (.not. ((maxval(myy).ge.y_end).OR.(minval(myy).le.(-1.0_num*y_end)))) THEN
-      WRITE(*,*) '..lare y extent < y_end - check boundaries are consistent'
-      gflag=.true.
-    ENDIF
-    IF (gflag) THEN
-      WRITE(*,*) 'terminating as fields module will not work beyond bounds set in Lare.'
-      STOP
-    ELSE 
-      WRITE(*,101,advance='no') 'fine!'
-    ENDIF 
+   IF (ce.AND.se) THEN
+    print*, 'ERROR: BOTH cfd and sfd formats at same location, terminating'
+    STOP
    ELSE
-    WRITE(*,101,advance='no') '..ODD lare grid used..'
-    IF (.not. ((maxval(myx).ge.xe(2)).OR.(minval(myx).le.xe(1)))) THEN
-      WRITE(*,*) '..particle start positions beyond specified lare grid range in x'
-      gflag=.true.
-    ENDIF
-    IF (.not. ((maxval(myy).ge.ye(2)).OR.(minval(myy).le.ye(1)))) THEN
-      WRITE(*,*) '..particle start positions beyond specified lare grid range in y'
-      gflag=.true.
-    ENDIF
-    IF (gflag) THEN
-      WRITE(*,*) 'terminating: particles cannot begin beyond bounds set by Lare fields.'
-      STOP
-    ELSE 
-      WRITE(*,101,advance='no') 'fine!'
-    ENDIF 
+    print*, 'ERROR: NEITHER cfd and sfd formats found at location, terminating'
+    print*, '-OR SOMETHING ELSE HAS GONE HORRIBLY WRONG-'
+    STOP
    ENDIF
-    !WRITE(*,101,advance='no')  '...done!'
-    WRITE(*,*)  '..now loading in Lare variables..'
+  ENDIF
    
+  WRITE(*,101)  'checking grid extent: ' 
+   IF (.not. ((maxval(myx).ge.xe(2)).OR.(minval(myx).le.xe(1)))) THEN
+    WRITE(*,*) '..particle start positions beyond specified lare grid range in x'
+    gflag=.true.
+   ENDIF
+   IF (.not. ((maxval(myy).ge.ye(2)).OR.(minval(myy).le.ye(1)))) THEN
+    WRITE(*,*) '..particle start positions beyond specified lare grid range in y'
+    gflag=.true.
+   ENDIF
+   IF (gflag) THEN
+    WRITE(*,*) 'terminating: particles cannot begin beyond bounds set by Lare fields.'
+    STOP
+   ELSE 
+    WRITE(*,101,advance='no') 'fine!'
+   ENDIF 
+
+   WRITE(*,*)  '..now loading in Lare variables..'
    frame=0
    DO WHILE (frame.LT.(nframes))
-    WRITE (istring,fmt1) mysnap+frame 			! converting integer to string using an 'internal file'
-    cfdloc=trim(adjustl(sloc))//trim(istring)//filetype1		! store new filename
-    sdfloc=trim(adjustl(sloc))//trim(istring)//filetype2		! store new filename
+    WRITE (istring,fmt1) mysnap+frame 			
+    cfdloc=trim(adjustl(sloc))//trim(istring)//filetype1
+    sdfloc=trim(adjustl(sloc))//trim(istring)//filetype2
   
     IF (ce) THEN
       INQUIRE(file=TRIM(cfdloc),exist=ce2)
@@ -578,10 +516,10 @@ CONTAINS
    !STOP
     IF (rank == 0) start_time = MPI_WTIME()
 
-
   END SUBROUTINE mpi_initialise_2d
-
+!--------------------------------------------------------!
   SUBROUTINE mpi_close
+! shuts down mpi environment and deallocates memory taken by lare data
 
     INTEGER :: seconds, minutes, hours, total
 
@@ -609,12 +547,11 @@ CONTAINS
     DEALLOCATE(myz)
 
   END SUBROUTINE mpi_close
-  
+!--------------------------------------------------------!  
   SUBROUTINE mpi_create_types_3d
+!creates 3d datatypes for reading in lare3d data (ripped from lare)
 
-    !INTEGER, DIMENSION(3) :: nx, ny, nz 
     INTEGER :: sizes(c_ndims), subsizes(c_ndims), starts(c_ndims)
-    !INTEGER :: local_dims(c_ndims), global_dims(c_ndims)
     INTEGER :: idir, vdir, mpitype
     INTEGER, PARAMETER :: ng = 2 ! Number of ghost cells
 
@@ -825,18 +762,14 @@ CONTAINS
     bz_subarray = mpitype
 
 
-
   END SUBROUTINE mpi_create_types_3d
-  
-   SUBROUTINE mpi_create_types_2d
+!--------------------------------------------------------!  
+  SUBROUTINE mpi_create_types_2d
+!creates 2d datatypes for reading in lare2d data (ripped from lare)
 
     INTEGER :: sizes(c_ndims), subsizes(c_ndims), starts(c_ndims)
-    !INTEGER :: local_dims(c_ndims), global_dims(c_ndims)
     INTEGER :: idir, vdir, mpitype
     INTEGER, PARAMETER :: ng = 2 ! Number of ghost cells
-
-    !local_dims = (/nx, ny/)
-    !global_dims = (/nx_global, ny_global/)
 
     ! File view for cell-centred variables (excluding the ghost cells)
     sizes = global_dims
@@ -1136,35 +1069,12 @@ CONTAINS
     bz_yface = cell_yface
 
   END SUBROUTINE mpi_create_types_2d
-  
-  
+!--------------------------------------------------------!  
   SUBROUTINE mpi_destroy_types
+! destroys the filetypes created to read in lare data
 
-    !CALL MPI_TYPE_FREE(cell_xface, errcode)
-    !CALL MPI_TYPE_FREE(cell_yface, errcode)
-    !CALL MPI_TYPE_FREE(cell_zface, errcode)
-    !CALL MPI_TYPE_FREE(node_xface, errcode)
-    !CALL MPI_TYPE_FREE(node_yface, errcode)
-    !CALL MPI_TYPE_FREE(node_zface, errcode)
-    !CALL MPI_TYPE_FREE(node_xface1, errcode)
-    !CALL MPI_TYPE_FREE(node_yface1, errcode)
-    !CALL MPI_TYPE_FREE(node_zface1, errcode)
-    !CALL MPI_TYPE_FREE(bx_xface, errcode)
-    !CALL MPI_TYPE_FREE(bx_yface, errcode)
-    !CALL MPI_TYPE_FREE(bx_zface, errcode)
-    !CALL MPI_TYPE_FREE(by_xface, errcode)
-    !CALL MPI_TYPE_FREE(by_yface, errcode)
-    !CALL MPI_TYPE_FREE(by_zface, errcode)
-    !CALL MPI_TYPE_FREE(bz_xface, errcode)
-    !CALL MPI_TYPE_FREE(bz_yface, errcode)
-    !CALL MPI_TYPE_FREE(bz_zface, errcode)
-    !CALL MPI_TYPE_FREE(bx_xface1, errcode)
-    !CALL MPI_TYPE_FREE(by_yface1, errcode)
-    !CALL MPI_TYPE_FREE(bz_zface1, errcode)
     CALL MPI_TYPE_FREE(cell_subarray, errcode)
     CALL MPI_TYPE_FREE(node_subarray, errcode)
-    !CALL MPI_TYPE_FREE(cellng_subarray, errcode)
-    !CALL MPI_TYPE_FREE(nodeng_subarray, errcode)
     CALL MPI_TYPE_FREE(cell_distribution, errcode)
     CALL MPI_TYPE_FREE(node_distribution, errcode)
     CALL MPI_TYPE_FREE(bx_subarray, errcode)
