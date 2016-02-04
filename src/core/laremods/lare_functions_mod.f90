@@ -1,5 +1,5 @@
 MODULE lare_functions
-!+ contains destagger, interpolation, and sub grid calculation of variables.
+!+ contains destagger, interpolation, and sub grid calculation of variables
 
 USE GLOBAL
 
@@ -13,50 +13,62 @@ CONTAINS
 !--------------------------------------
 FUNCTION stagger_bx(var)
 !+ function for de-staggering bx
-!  (separate function necessary since nx, ny, nz may be different values)
-    REAL(num), DIMENSION(0:ny,0:nz), INTENT(IN)  :: var
-    REAL(num), DIMENSION(0:ny,0:nz) 		 :: stagger_bx
+    REAL(num), DIMENSION(:,:), INTENT(IN)  		:: var
+    REAL(num), DIMENSION(SIZE(var,1), SIZE(var,2))	:: stagger_bx 
+    INTEGER	:: mny, mnz
+    
+    mny=size(var,1)
+    mnz=size(var,2)
     
     !staggering right
-    stagger_bx(0:ny-1,0:nz)=0.5_num*(var(0:ny-1,0:nz)+var(1:ny,0:nz))
-    stagger_bx(ny,0:nz)=var(ny,0:nz)
+    stagger_bx(1:mny-1,1:mnz)=1.5_num*(var(1:mny-1,1:mnz)+var(2:mny,1:mnz))
+    stagger_bx(mny,1:mnz)=var(mny,1:mnz)
     !staggering up
-    stagger_bx(0:ny,0:nz-1)=0.5_num*(stagger_bx(0:ny,0:nz-1)+stagger_bx(0:ny,1:nz))
-    stagger_bx(0:ny,nz)=stagger_bx(0:ny,nz)
+    stagger_bx(1:mny,1:mnz-1)=1.5_num*(stagger_bx(1:mny,1:mnz-1)+stagger_bx(1:mny,2:mnz))
+    stagger_bx(1:mny,mnz)=stagger_bx(1:mny,mnz)
        
     RETURN
 
 END FUNCTION stagger_bx
 !-------------------------------!
 FUNCTION stagger_by(var)
-!+ function for de-staggering by
-!  (separate function necessary since nx, ny, nz may be different values)
-    REAL(num), DIMENSION(0:nx,0:nz), INTENT(IN)  :: var
-    REAL(num), DIMENSION(0:nx,0:nz) 		 :: stagger_by
+!+ function for de-staggering by for arbitrary portion of grid
+
+    REAL(num), DIMENSION(:,:), INTENT(IN)  		:: var
+    REAL(num), DIMENSION(SIZE(var,1), SIZE(var,2))	:: stagger_by  
+    INTEGER	:: mnx, mnz
+
+    mnx=size(var,1)
+    mnz=size(var,2)
     
     !staggering right
-    stagger_by(0:nx-1,0:nz)=0.5_num*(var(0:nx-1,0:nz)+var(1:nx,0:nz))
-    stagger_by(nx,0:nz)=var(nx,0:nz)
+    stagger_by(1:mnx-1,1:mnz)=0.5_num*(var(1:mnx-1,1:mnz)+var(2:mnx,1:mnz))
+    stagger_by(mnx,1:mnz)=var(mnx,1:mnz)
     !staggering up
-    stagger_by(0:nx,0:nz-1)=0.5_num*(stagger_by(0:nx,0:nz-1)+stagger_by(0:nx,1:nz))
-    stagger_by(0:nx,nz)=stagger_by(0:nx,nz)
+    stagger_by(1:mnx,1:mnz-1)=0.5_num*(stagger_by(1:mnx,1:mnz-1)+stagger_by(1:mnx,2:mnz))
+    stagger_by(1:mnx,mnz)=stagger_by(1:mnx,mnz)
        
     RETURN
 
 END FUNCTION stagger_by
 !-------------------------------!
 FUNCTION stagger_bz(var)
-
-    REAL(num), DIMENSION(0:nx,0:ny), INTENT(IN)  :: var
-    REAL(num), DIMENSION(0:nx,0:ny) 		 :: stagger_bz
+!+ function for de-staggering bz (for arbitrary portion of grid)
+    REAL(num), DIMENSION(:,:), INTENT(IN)  		:: var
+    REAL(num), DIMENSION(SIZE(var,1), SIZE(var,2))	:: stagger_bz    
+    INTEGER	:: mnx, mny
+    
+    mnx=size(var,1)
+    mny=size(var,2)
+    
 !+ function for de-staggering bz
 !  (separate function necessary since nx, ny, nz may be different values)    
     !staggering right
-    stagger_bz(0:nx-1,0:ny)=0.5_num*(var(0:nx-1,0:ny)+var(1:nx,0:ny))
-    stagger_bz(nx,0:ny)=var(nx,0:ny)
+    stagger_bz(1:mnx-1,1:mny)=0.5_num*(var(1:mnx-1,1:mny)+var(2:mnx,1:mny))
+    stagger_bz(mnx,1:mny)=var(mnx,1:mny)
     !staggering up
-    stagger_bz(0:nx,0:ny-1)=0.5_num*(stagger_bz(0:nx,0:ny-1)+stagger_bz(0:nx,1:ny))
-    stagger_bz(0:nx,ny)=stagger_bz(0:nx,ny)
+    stagger_bz(1:mnx,1:mny-1)=0.5_num*(stagger_bz(1:mnx,1:mny-1)+stagger_bz(1:mnx,2:mny))
+    stagger_bz(1:mnx,mny)=stagger_bz(1:mnx,mny)
        
     RETURN
 
@@ -64,13 +76,14 @@ END FUNCTION stagger_bz
 !--------------------------------------!
 FUNCTION stagger_bx_2d(var)
 !+ function for de-staggering bx
-!  (separate function necessary since nx, ny, nz may be different values)
-    REAL(num), DIMENSION(0:ny), INTENT(IN)  	:: var
-    REAL(num), DIMENSION(0:ny) 		 	:: stagger_bx_2d
+    REAL(num), DIMENSION(:), INTENT(IN)  	:: var
+    REAL(num), DIMENSION(SIZE(var,1))		:: stagger_bx_2d 
+    INTEGER	:: mny  
+    mny=size(var,1)
     
     !staggering right
-    stagger_bx_2d(0:ny-1)=0.5_num*(var(0:ny-1)+var(1:ny))
-    stagger_bx_2d(ny)=var(ny)
+    stagger_bx_2d(1:mny-1)=0.5_num*(var(1:mny-1)+var(2:mny))
+    stagger_bx_2d(mny)=var(mny)
        
     RETURN
 
@@ -78,13 +91,14 @@ END FUNCTION stagger_bx_2d
 !-------------------------------!
 FUNCTION stagger_by_2d(var)
 !+ function for de-staggering in a 2D grid
-
-    REAL(num), DIMENSION(0:nx), INTENT(IN) 	:: var
-    REAL(num), DIMENSION(0:nx) 			:: stagger_by_2d
-    
+    REAL(num), DIMENSION(:), INTENT(IN)  	:: var
+    REAL(num), DIMENSION(SIZE(var,1))		:: stagger_by_2d 
+    INTEGER	:: mnx
+ 
+    mnx=size(var,1)
     !staggering right
-    stagger_by_2d(0:nx-1)=0.5_num*(var(0:nx-1)+var(1:nx))
-    stagger_by_2d(nx)=var(nx)
+    stagger_by_2d(1:mnx-1)=0.5_num*(var(1:mnx-1)+var(2:mnx))
+    stagger_by_2d(mnx)=var(mnx)
        
     RETURN
 
@@ -179,7 +193,7 @@ FUNCTION T2d(R,T)
     temp=0.0_num
     dg=(/myx(2)-myx(1),myy(2)-myy(1)/)	! grid spacing
     odg=(/1.0_num/dg(1),1.0_num/dg(2)/)	! one over grid spacing
-    l=(/-nx,-ny,-nframes/)					! initial value of l, set to silly value (as >=0 triggers flag)   
+    l=(/-nx,-ny,-nframes/)					! initial value of l, set to silly value (as <=0 triggers flag)   
     
        
   ! --STEP ONE-- !
@@ -191,13 +205,17 @@ FUNCTION T2d(R,T)
     IF ((R(1).ge.myx(jjx)).and.(R(1).lt.myx(jjx+1))) THEN 
       l(1)=jjx
       EXIT
+    !ELSE
+    !  PRINT *, 'CANNOT FIND R(1) IN LARE x RANGE'
     ENDIF
    ENDDO
-   !IF (l(1).eq.(-nx)) fxflag=.TRUE.
    DO jjy=4,ny-4
     IF ((R(2).ge.myy(jjy)).and.(R(2).lt.myy(jjy+1))) THEN
       l(2)=jjy
+    ! print*, l(2)
       EXIT
+    !ELSE
+    !  PRINT *, 'CANNOT FIND R(2) IN LARE y RANGE'
     ENDIF
    ENDDO
 
@@ -206,7 +224,8 @@ FUNCTION T2d(R,T)
   IF (nframes.gt.1) THEN
    dgt=ltimes(2)-ltimes(1)
    odgt=1.0_num/dgt
-   DO jjt=0,nframes-1
+   !print*, ltimes(1), ltimes(0)
+   DO jjt=1,nframes
     IF ((T.GE.ltimes(jjt)).AND.((T.LT.ltimes(jjt+1)))) THEN
       l(3)=jjt
       EXIT
@@ -219,7 +238,7 @@ FUNCTION T2d(R,T)
    ALLOCATE(dbxdxt(2),dbxdyt(2),dbydxt(2),dbydyt(2),dbzdxt(2),dbzdyt(2))
    ALLOCATE(dExdxt(2),dExdyt(2),dEydxt(2),dEydyt(2),dEzdxt(2),dEzdyt(2))
   ELSE
-   l(3)=0
+   l(3)=1
    rpt=0
    ALLOCATE(bxt(1), byt(1), bzt(1),vxt(1), vyt(1), vzt(1), Ext(1), Eyt(1), Ezt(1), jxt(1), jyt(1), jzt(1))
    ALLOCATE(dbxdxt(1),dbxdyt(1),dbydxt(1),dbydyt(1),dbzdxt(1),dbzdyt(1))
@@ -227,7 +246,18 @@ FUNCTION T2d(R,T)
   !what happens if there is one frame to work with?
   ENDIF 
 
+  IF (minval(l).le.0) THEN
+  ! CHECK: have we located the particle on the grid?
+   PRINT*, 'particle identified at', L
+   PRINT*, 'x/y grid bounds-> 1:', nx, ny
+   PRINT*, 't grid bounds->', ltimes(1),':',ltimes(nframes)
+   print*, R
+   STOP
+  ENDIF
+  
 
+
+!  print*, l(2)
    coffset=(/(R(1)-myx(l(1)))*odg(1),(R(2)-myy(l(2)))*odg(2)/)
    
    ! --STEP TWO-- !
@@ -236,27 +266,31 @@ FUNCTION T2d(R,T)
   DO it=0,rpt	! NEED TO REPEAT FOR INTERPOLATION BETWEEN FRAMES, JT DEC 2015
   !(dx,dy,f00,f10,f01,f11)
    temp=linterp2d(coffset(1),coffset(2), &
-   bx(l(1),l(2),0,l(3)+it),bx(l(1)+1,l(2),0,l(3)+it),bx(l(1),l(2)+1,0,l(3)+it),bx(l(1)+1,l(2)+1,0,l(3)+it))
+   bx(l(1),l(2),1,l(3)+it),bx(l(1)+1,l(2),1,l(3)+it),bx(l(1),l(2)+1,1,l(3)+it),bx(l(1)+1,l(2)+1,1,l(3)+it))
    bxt(it+1)=temp		!1
    
    temp=linterp2d(coffset(1),coffset(2), &
-   by(l(1),l(2),0,l(3)+it),by(l(1)+1,l(2),0,l(3)+it),by(l(1),l(2)+1,0,l(3)+it),by(l(1)+1,l(2)+1,0,l(3)+it))
+   by(l(1),l(2),1,l(3)+it),by(l(1)+1,l(2),1,l(3)+it),by(l(1),l(2)+1,1,l(3)+it),by(l(1)+1,l(2)+1,1,l(3)+it))
    byt(it+1)=temp		!2
    
    temp=linterp2d(coffset(1),coffset(2), &
-   bz(l(1),l(2),0,l(3)+it),bz(l(1)+1,l(2),0,l(3)+it),bz(l(1),l(2)+1,0,l(3)+it),bz(l(1)+1,l(2)+1,0,l(3)+it))
+   bz(l(1),l(2),1,l(3)+it),bz(l(1)+1,l(2),1,l(3)+it),bz(l(1),l(2)+1,1,l(3)+it),bz(l(1)+1,l(2)+1,1,l(3)+it))
    bzt(it+1)=temp		!3
+ !  print*, 'it', it!, 'bzt(it)=', linterp2d(coffset(1),coffset(2), &
+   !bz(l(1),l(2),0,l(3)+it),bz(l(1)+1,l(2),0,l(3)+it),bz(l(1),l(2)+1,0,l(3)+it),bz(l(1)+1,l(2)+1,0,l(3)+it))
+ !  print*, bz(l(1),l(2),0,l(3)+it), bz(l(1)+1,l(2),0,l(3)+it)
+ !  print*, bz(l(1),l(2)+1,0,l(3)+it),bz(l(1)+1,l(2)+1,0,l(3)+it)
    
    temp=linterp2d(coffset(1),coffset(2), &
-   vx(l(1),l(2),0,l(3)+it),vx(l(1)+1,l(2),0,l(3)+it),vx(l(1),l(2)+1,0,l(3)+it),vx(l(1)+1,l(2)+1,0,l(3)+it))
+   vx(l(1),l(2),1,l(3)+it),vx(l(1)+1,l(2),1,l(3)+it),vx(l(1),l(2)+1,1,l(3)+it),vx(l(1)+1,l(2)+1,1,l(3)+it))
    vxt(it+1)=temp		!4
    
    temp=linterp2d(coffset(1),coffset(2), &
-   vy(l(1),l(2),0,l(3)+it),vy(l(1)+1,l(2),0,l(3)+it),vy(l(1),l(2)+1,0,l(3)+it),vy(l(1)+1,l(2)+1,0,l(3)+it))
+   vy(l(1),l(2),1,l(3)+it),vy(l(1)+1,l(2),1,l(3)+it),vy(l(1),l(2)+1,1,l(3)+it),vy(l(1)+1,l(2)+1,1,l(3)+it))
    vyt(it+1)=temp		!5
    
    temp=linterp2d(coffset(1),coffset(2), &
-   vz(l(1),l(2),0,l(3)+it),vz(l(1)+1,l(2),0,l(3)+it),vz(l(1),l(2)+1,0,l(3)+it),vz(l(1)+1,l(2)+1,0,l(3)+it))
+   vz(l(1),l(2),1,l(3)+it),vz(l(1)+1,l(2),1,l(3)+it),vz(l(1),l(2)+1,1,l(3)+it),vz(l(1)+1,l(2)+1,1,l(3)+it))
    vzt(it+1)=temp		!6
 
    
@@ -271,9 +305,9 @@ FUNCTION T2d(R,T)
    ALLOCATE(mby(-4:5,-4:5))
    ALLOCATE(mbz(-4:5,-4:5))
 
-   mbx=bx(l(1)-4:l(1)+5,l(2)-4:l(2)+5,0,l(3)+it)
-   mby=by(l(1)-4:l(1)+5,l(2)-4:l(2)+5,0,l(3)+it)
-   mbz=bz(l(1)-4:l(1)+5,l(2)-4:l(2)+5,0,l(3)+it)
+   mbx=bx(l(1)-4:l(1)+5,l(2)-4:l(2)+5,1,l(3)+it)
+   mby=by(l(1)-4:l(1)+5,l(2)-4:l(2)+5,1,l(3)+it)
+   mbz=bz(l(1)-4:l(1)+5,l(2)-4:l(2)+5,1,l(3)+it)
 
 
    ! calculate x-derivs first..
@@ -303,31 +337,17 @@ FUNCTION T2d(R,T)
      END DO
     END DO
 
-   ! .. and finally z derivs.
-!   ALLOCATE(dmbxdz(-4:5,-4:5,-2:3))
-!   ALLOCATE(dmbydz(-4:5,-4:5,-2:3))
-!   ALLOCATE(dmbzdz(-4:5,-4:5,-2:3))
-!
-!   DO iz=-2,3
-!    DO iy=-4,5   
-!     DO ix=-4,5
-!      dmbxdz(ix,iy,iz)=oneotwelve*(-mbx(ix,iy,iz+2)+8.0_num*mbx(ix,iy,iz+1)-8.0_num*mbx(ix,iy,iz-1)+mbx(ix,iy,iz-2))*odg(3)
-!      dmbydz(ix,iy,iz)=oneotwelve*(-mby(ix,iy,iz+2)+8.0_num*mby(ix,iy,iz+1)-8.0_num*mby(ix,iy,iz-1)+mby(ix,iy,iz-2))*odg(3)
-!      dmbzdz(ix,iy,iz)=oneotwelve*(-mbz(ix,iy,iz+2)+8.0_num*mbz(ix,iy,iz+1)-8.0_num*mbz(ix,iy,iz-1)+mbz(ix,iy,iz-2))*odg(3)
-!     ENDDO
-!    ENDDO
-!   ENDDO
+   ! .. and finally z derivs (EXCEPT WE DON'T HAVE ANY!)
 
-   
    ! NB the arrays are odd shapes depending on deriv direction but the target cell remains at [0:1,0:1,0:1]
    ! also need temporary velocity arrays, in order to calc E=-etaJ+vxB
 
    ALLOCATE(mvx(-2:3,-2:3))
    ALLOCATE(mvy(-2:3,-2:3))
    ALLOCATE(mvz(-2:3,-2:3))
-   mvx=vx(l(1)-2:l(1)+3,l(2)-2:l(2)+3,0,l(3)+it)
-   mvy=vy(l(1)-2:l(1)+3,l(2)-2:l(2)+3,0,l(3)+it)
-   mvz=vz(l(1)-2:l(1)+3,l(2)-2:l(2)+3,0,l(3)+it)
+   mvx=vx(l(1)-2:l(1)+3,l(2)-2:l(2)+3,1,l(3)+it)
+   mvy=vy(l(1)-2:l(1)+3,l(2)-2:l(2)+3,1,l(3)+it)
+   mvz=vz(l(1)-2:l(1)+3,l(2)-2:l(2)+3,1,l(3)+it)
    
    
    ! now calculate temporary currents and also local eta values
@@ -365,10 +385,6 @@ FUNCTION T2d(R,T)
     dmbydy(0,0), dmbydy(1,0), dmbydy(0,1), dmbydy(1,1)) ! 11
    dbzdyt(it+1)=linterp2d(coffset(1),coffset(2), &
     dmbzdy(0,0), dmbzdy(1,0), dmbzdy(0,1), dmbzdy(1,1)) ! 12            
-
-   !dbxdzt(it+1)=0.0_num
-   !dbydzt(it+1)=0.0_num
-   !dbzdzt(it+1)=0.0_num
    
    DEALLOCATE(dmbxdx)
    DEALLOCATE(dmbydx)
@@ -389,13 +405,6 @@ FUNCTION T2d(R,T)
    
    ! --STEP FOUR--
    ! Ohm's Law: E=vxB-etaJ OR E=-etaJ
-   !DO iz=-1,2  
-   ! DO iy=-1,2
-   !  DO ix=-1,2
-   !   mEx(ix,iy,iz)=eta*(dmbzdy(ix,iy,iz)-dmbydz(ix,iy,iz))-(mvy(ix,iy,iz)*mbz(ix,iy,iz)-mvz(ix,iy,iz)*mby(ix,iy,iz))
-   !   mEy(ix,iy,iz)=eta*(dmbxdz(ix,iy,iz)-dmbzdx(ix,iy,iz))-(mvz(ix,iy,iz)*mbx(ix,iy,iz)-mvx(ix,iy,iz)*mbz(ix,iy,iz))
-   !   mEz(ix,iy,iz)=eta*(dmbydx(ix,iy,iz)-dmbxdy(ix,iy,iz))-(mvx(ix,iy,iz)*mby(ix,iy,iz)-mvy(ix,iy,iz)*mbx(ix,iy,iz))
-
     DO iy=-2,3
      DO ix=-2,3
       mEx(ix,iy)=meta(ix,iy)*mjx(ix,iy)-(mvy(ix,iy)*mbz(ix,iy)-mvz(ix,iy)*mby(ix,iy))
@@ -531,7 +540,7 @@ FUNCTION T2d(R,T)
     T2d(16)=linterp1d((T-ltimes(l(3)))*odgt,dbxdyt(1),dbxdyt(2))
     T2d(17)=linterp1d((T-ltimes(l(3)))*odgt,dbydyt(1),dbydyt(2))
     T2d(18)=linterp1d((T-ltimes(l(3)))*odgt,dbzdyt(1),dbzdyt(2))
-    T2d(19)=0.0_num
+    T2d(19)=0.0_num		! Z derivs explicitly set to zero in 2d case
     T2d(20)=0.0_num
     T2d(21)=0.0_num
     T2d(22)=linterp1d((T-ltimes(l(3)))*odgt,dExdxt(1),dExdxt(2))
@@ -575,7 +584,7 @@ FUNCTION T2d(R,T)
     T2d(16)=dbxdyt(1)
     T2d(17)=dbydyt(1)
     T2d(18)=dbzdyt(1)
-    T2d(19)=0.0_num
+    T2d(19)=0.0_num		! Z derivs explicitly set to zero in 2d case
     T2d(20)=0.0_num
     T2d(21)=0.0_num
     T2d(22)=dExdxt(1)
@@ -653,7 +662,7 @@ FUNCTION T3d(R,T)
   IF (nframes.gt.1) THEN
    dgt=ltimes(2)-ltimes(1)
    odgt=1.0_num/dgt
-   DO jjt=0,nframes-1
+   DO jjt=1,nframes
     IF ((T.GE.ltimes(jjt)).AND.((T.LT.ltimes(jjt+1)))) THEN
       l(4)=jjt
       EXIT
@@ -666,7 +675,7 @@ FUNCTION T3d(R,T)
    ALLOCATE(dbxdxt(2),dbxdyt(2),dbxdzt(2),dbydxt(2),dbydyt(2),dbydzt(2),dbzdxt(2),dbzdyt(2),dbzdzt(2))
    ALLOCATE(dExdxt(2),dExdyt(2),dExdzt(2),dEydxt(2),dEydyt(2),dEydzt(2),dEzdxt(2),dEzdyt(2),dEzdzt(2))
   ELSE
-   l(4)=0
+   l(4)=1
    rpt=0
    ALLOCATE(bxt(1), byt(1), bzt(1),vxt(1), vyt(1), vzt(1), Ext(1), Eyt(1), Ezt(1), jxt(1), jyt(1), jzt(1))
    ALLOCATE(dbxdxt(1),dbxdyt(1),dbxdzt(1),dbydxt(1),dbydyt(1),dbydzt(1),dbzdxt(1),dbzdyt(1),dbzdzt(1))

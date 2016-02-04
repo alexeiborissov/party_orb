@@ -12,27 +12,38 @@ MODULE global
 !########################################################################## 
  CHARACTER(Len = 4), PARAMETER	:: FMOD='l2d' ! SWITCH BETWEEN FIELDS: "l3d","l2d", "SEP","CMT","test", or "bor"
  INTEGER, PARAMETER		:: mysnap=0001	!  no. of ****.cfd/****.sdf file (if "l3d")
- INTEGER, PARAMETER		:: nframes=1	! no. of frames
+ INTEGER, PARAMETER		:: nframes=2	! no. of frames
  CHARACTER(Len = 40)		:: sloc='../../lare2d_runs/l2d_uniformfield/Data/'
- !CHARACTER(Len = 5)		:: sloc='./../'
 
 !##########################################################################
 ! now some stuff required to plug in lare data 
  
- INTEGER, PARAMETER	:: num = KIND(1.0d0), dbl = KIND(1.D0)
- INTEGER, PARAMETER	:: NKEEPMAX = 1000001
- INTEGER(KIND=8), PARAMETER	:: NSTPMAX  = 5E9
- INTEGER(KIND=8)	:: NSTP
- !INTEGER, PARAMETER	:: NSTPMAX  = 100000		!temporary reduction, to speed up error catching
- !INTEGER, PARAMETER	:: NKEEPMAX = 10001
+ INTEGER, PARAMETER		:: num = KIND(1.0d0), dbl = KIND(1.D0)
+ INTEGER, PARAMETER		:: NKEEPMAX = 1000001		! max no of dumps
+ INTEGER(KIND=8), PARAMETER	:: NSTPMAX  = 5E9	! max no of steps
+ INTEGER(KIND=8)		:: NSTP				! step counter
+ INTEGER, PARAMETER		:: NSTORE =50, MAXTIME=200	! how often does the RK solver output data, every NSTORE steps?
+ INTEGER 			:: ix, iy, iz,it, iix, iiy, iiz,iit, i
+ INTEGER 			:: frame 
+ 
+!JT DEBUGGING SWITCHES:
+ LOGICAL, PARAMETER		:: writervs=.TRUE.					! ARE WE WRITING? (ALWAYS TRUE!) 
+ LOGICAL, PARAMETER		:: JTo=.TRUE., JTo2=.FALSE., JTo3=.FALSE., JTO4=.TRUE.	! various debugging switches (2&3 output every NSTP)
+ LOGICAL, PARAMETER		:: FIELDDUMP=.FALSE.					! switch to dump the lare fields to unformatted data files.
+ LOGICAL, PARAMETER		:: everystepswitch=.TRUE.				! dumps EVERY NSTP to each particle data file.
+ 
+!PARTICLE quantities: 								
+ REAL(num), DIMENSION(3) 	:: R1,R2, tempr
+ REAL(num) 			:: time, tempa, tempe
+ REAL(num) 			:: Ekin,Alpha,AlphaMax,AlphaMin,dalpha, Ekinlow,Ekinhigh,T1Keep,T2Keep
+ REAL(num) 			:: T1,T2, H1,EPS, USTART, mu, USTARTKEEP, GAMMASTART,GAMMASTARTKEEP, VPARSTART
+ INTEGER, DIMENSION(3) 		:: RSteps 
+ INTEGER			:: pn, nparticles
+ INTEGER			:: p_restart_no, p_stop_no
+ INTEGER 			:: EKinSteps, AlphaSteps
+ LOGICAL			:: p_restart=.FALSE., p_stop=.FALSE. 		! are we starting or stopping midway through the arrays?
+ LOGICAL			:: RANDOMISE_R, RANDOMISE_A, RANDOMISE_E	! switches for randomising position, angle and energy (TWO WORK CURRENTLY!)
 
- INTEGER, PARAMETER	:: NSTORE =50, MAXTIME=200
- INTEGER, PARAMETER	:: JTo=1, JTo2=0, JTo3=0, JTO4=1	! JTo looks at variables encountering underflows
- 								! 2& 3 output various things every NSTP
- INTEGER		:: pn, nparticles, writervs
- INTEGER		:: p_restart_no, p_stop_no
- LOGICAL		:: p_restart=.FALSE., p_stop=.FALSE. 
- LOGICAL		:: RANDOMISE_R, RANDOMISE_A, RANDOMISE_E
  
 ! CONSTANTS
  REAL(num), PARAMETER	:: pi = 3.1415926535897932_num
@@ -99,15 +110,13 @@ MODULE global
  ! (required by LARE modules)
 
  !REAL(num), DIMENSION(2), PARAMETER	:: xe=(/0.1_num,99.9_num/),ye=(/-0.1_num,99.9_num/),ze=(/-19.5_num,79.5_num/)
- REAL(num), DIMENSION(2), PARAMETER	:: xe=(/-0.9_num,0.9_num/),ye=(/-0.9_num,0.9_num/),ze=(/-10.00_num,10.0_num/)
+ REAL(num), DIMENSION(2), PARAMETER	:: xe=(/-0.9_num,0.9_num/),ye=(/-0.9_num,0.9_num/),ze=(/-100.00_num,100.0_num/)
  !REAL(num), PARAMETER			:: eta=0.001_num, jcrit=25.0_num
  REAL(num), PARAMETER			:: eta=0.0_num, jcrit=20.0_num, rwidth=0.05_num
  !REAL(num), PARAMETER			:: eta=0.001_num, jcrit=20.0_num, rwidth=0.5_num
 
  CHARACTER(Len = 5), PARAMETER 	:: dloc='Data/'
  CHARACTER(Len = 11) 		:: dlocN=dloc//'DataN/',dlocR=dloc//'DataR/'
-
- LOGICAL		:: everystepswitch=.FALSE.	! this switch allows one output dump every iteration
 
  INTEGER, PARAMETER				:: mpireal = MPI_DOUBLE_PRECISION
  !INTEGER, PARAMETER				:: nx_global=64, ny_global=64, nz_global=64		! julie's lare3d cfd config
@@ -126,22 +135,13 @@ MODULE global
  CHARACTER(LEN = data_dir_max_length) :: data_dir
  CHARACTER(Len = 14)	:: mydataloc
  CHARACTER(Len = 4)	:: filetype1='.cfd', filetype2='.sdf'
- !CHARACTER(len=35)	:: cfdloc
  CHARACTER(LEN = 20) 	:: name, class, mesh_name, mesh_class
  
  !---BOURDIN DATA DEFINITIONS---! 
  CHARACTER(Len = 8)	:: filetypeb='.bin_f77'
  LOGICAL		:: bourdinflag, l3dflag, analyticalflag, l2dflag
  REAL(num), DIMENSION(2)	:: xee, yee, zee
- 
- 
- 
- REAL(num), DIMENSION(3) :: tempr
- REAL(num) :: time, tempa, tempe
- INTEGER :: ix, iy, iz,it, iix, iiy, iiz,iit, i
- INTEGER :: frame
- 
-     
+  
   ! MPI data
  INTEGER :: rank, proc_x_min, proc_x_max, proc_y_min, proc_y_max, proc_z_min, proc_z_max
  INTEGER :: errcode, comm, tag, nproc, nprocx, nprocy, nprocz
@@ -155,12 +155,6 @@ MODULE global
  INTEGER :: output_file = 0
   
  LOGICAL :: gflag, pflag1=.true.
- 
- INTEGER :: EKinSteps, AlphaSteps
- REAL(num) :: Ekin,Alpha,AlphaMax,AlphaMin,dalpha, Ekinlow,Ekinhigh,T1Keep,T2Keep
- REAL(num) :: T1,T2, H1,EPS, USTART, mu, USTARTKEEP, GAMMASTART,GAMMASTARTKEEP, VPARSTART
- REAL(num), DIMENSION(3) :: R1,R2
- INTEGER, DIMENSION(3) :: RSteps
  
  CHARACTER(len=7) 				:: fmt1='(I4.4)', istring 	! format descriptor
  CHARACTER(LEN = 20+data_dir_max_length) 	:: cfdloc, sdfloc
@@ -192,42 +186,8 @@ MODULE global
   
   INTEGER, DIMENSION(:), ALLOCATABLE	:: global_dims, local_dims
   REAL(num), DIMENSION(:), ALLOCATABLE :: extents, extent, stagger
-   
-!   INTEGER, PARAMETER :: c_max_string_length = 64
-     
-!  INTEGER, PARAMETER :: i4  = SELECTED_INT_KIND(9)  ! 4-byte 2^31 ~ 10^9
-!  INTEGER, PARAMETER :: i8  = SELECTED_INT_KIND(18) ! 8-byte 2^63 ~ 10^18
-!
-!  INTEGER, PARAMETER :: r4  = SELECTED_REAL_KIND(r=30)
-!  INTEGER, PARAMETER :: r8  = SELECTED_REAL_KIND(r=300)
-!  INTEGER, PARAMETER :: r16 = SELECTED_REAL_KIND(r=3000)
-!
-!  INTEGER, PARAMETER :: c_maxdims = 4
- ! INTEGER(i4), PARAMETER :: c_id_length = 32
-!  INTEGER(i4), PARAMETER :: c_long_id_length = 256
-!  INTEGER(i4), PARAMETER :: c_max_string_length = 128
-!  INTEGER(i8) :: npoint_per_iteration = 10000
-!  CHARACTER(LEN=4), PARAMETER :: c_sdf_magic = 'SDF1'
-!  REAL(r8), PARAMETER :: c_tiny = TINY(1.0_r8)
-!
-!  LOGICAL :: print_errors   = .TRUE.
-!  LOGICAL :: print_warnings = .TRUE.
-!  LOGICAL :: exit_on_error  = .TRUE.
-   
-  
-!  CHARACTER(LEN=*), PARAMETER :: c_code_name = 'Lare3D'
-!  INTEGER(i4) :: c_version, c_revision, c_minor_rev
-!  INTEGER(i4), PARAMETER :: c_code_io_version = 1
-!!  CHARACTER(LEN=*), PARAMETER :: c_commit_id = _COMMIT
-!!  CHARACTER(LEN=*), PARAMETER :: c_compile_machine = _MACHINE
-!!  CHARACTER(LEN=*), PARAMETER :: c_compile_flags = 'unknown'
-!!  INTEGER(i4), PARAMETER :: c_compile_date = _DATE
-!  CHARACTER(LEN=16) :: version_string
-!  CHARACTER(LEN=70) :: ascii_header
-  
-  !INTEGER, PARAMETER :: c_sdf_read = 0
  
- !----------------------------------------------------
+!----------------------------------------------------
  contains
 !----------------------------------------------------!
 SUBROUTINE read_param

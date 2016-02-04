@@ -19,7 +19,7 @@ CONTAINS
  SUBROUTINE mpi_initialise
 !  Subroutine which sets up the Lare grids from either cfd or sdf files, and related settings
 !  -> much of this was cobbled together from lare subroutines and functions. My Bad.
-    INTEGER :: icoord
+    INTEGER :: icoord, dims(c_ndims)
     INTEGER :: x_coords, y_coords, z_coords
     LOGICAL :: periods(3), reorder, ce, se, ce2, se2
     INTEGER :: starts(3), sizes(3), subsizes(3)
@@ -39,6 +39,7 @@ CONTAINS
     local_dims = (/nx, ny,nz/)
     global_dims = (/nx_global, ny_global,nz_global/)
 
+    CALL MPI_DIMS_CREATE(nproc, c_ndims, dims, errcode)
 
     IF (MAX(dims(1), 1)*MAX(dims(2), 1)*MAX(dims(3), 1) .GT. nproc) THEN
       dims = 0
@@ -50,7 +51,7 @@ CONTAINS
       END IF
     END IF
 
-    CALL MPI_DIMS_CREATE(nproc, ndims, dims, errcode)
+    CALL MPI_DIMS_CREATE(nproc, c_ndims, dims, errcode)
 
     nprocx = dims(3)
     nprocy = dims(2)
@@ -60,7 +61,7 @@ CONTAINS
     reorder=.FALSE.
 
 
-    CALL MPI_CART_CREATE(MPI_COMM_WORLD, ndims, dims, periods, &
+    CALL MPI_CART_CREATE(MPI_COMM_WORLD, c_ndims, dims, periods, &
         reorder, comm, errcode)
 
     CALL MPI_COMM_RANK(comm, rank, errcode)
@@ -172,7 +173,7 @@ CONTAINS
     sizes = (/ nx_global+1, ny_global+1, nz_global+1 /)
 
     ! set up and commit the subarray type
-    CALL MPI_TYPE_CREATE_SUBARRAY(ndims, sizes, subsizes, starts, &
+    CALL MPI_TYPE_CREATE_SUBARRAY(c_ndims, sizes, subsizes, starts, &
         MPI_ORDER_FORTRAN, mpireal, subtype, errcode)
 
     CALL MPI_TYPE_COMMIT(subtype, errcode)
@@ -187,22 +188,23 @@ CONTAINS
    
    !ALLOCATE(rho(0:nx,0:ny,0:nz))
    !ALLOCATE(energy(0:nx,0:ny,0:nz)) 
-   ALLOCATE(vx(0:nx,0:ny,0:nz,0:nframes-1))
-   ALLOCATE(vy(0:nx,0:ny,0:nz,0:nframes-1))
-   ALLOCATE(vz(0:nx,0:ny,0:nz,0:nframes-1))
-   ALLOCATE(bx(0:nx,0:ny,0:nz,0:nframes-1))
-   ALLOCATE(by(0:nx,0:ny,0:nz,0:nframes-1))
-   ALLOCATE(bz(0:nx,0:ny,0:nz,0:nframes-1))
+   ALLOCATE(vx(1:nx,1:ny,1:nz,1:nframes))
+   ALLOCATE(vy(1:nx,1:ny,1:nz,1:nframes))
+   ALLOCATE(vz(1:nx,1:ny,1:nz,1:nframes))
+   ALLOCATE(bx(1:nx,1:ny,1:nz,1:nframes))
+   ALLOCATE(by(1:nx,1:ny,1:nz,1:nframes))
+   ALLOCATE(bz(1:nx,1:ny,1:nz,1:nframes))
    ALLOCATE(myx(0:nx))
    ALLOCATE(myy(0:ny))
    ALLOCATE(myz(0:nz))
-   ALLOCATE(ltimes(0:nframes-1))
+   ALLOCATE(ltimes(1:nframes))
 
    !ALLOCATE(eta(0:nx,0:ny,0:nz))
    !ALLOCATE(temperature(0:nx,0:ny,0:nz))
    !ALLOCATE(pressure(0:nx,0:ny,0:nz))   gflag=.false.
-  
-  WRITE (istring,fmt1) mysnap 			! convert first snapshot number to filename
+
+  frame=mysnap
+  WRITE (istring,fmt1) frame 			! convert first snapshot number to filename
   cfdloc=trim(adjustl(sloc))//trim(istring)//filetype1	! query both cfd and sdf formats		
   sdfloc=trim(adjustl(sloc))//trim(istring)//filetype2
   
@@ -256,40 +258,64 @@ CONTAINS
   ELSE 
    WRITE(*,101,advance='no') 'fine!'
   ENDIF 
- 
-  WRITE(*,*)  '..now loading in Lare variables..'
-  frame=0
-  DO WHILE (frame.LT.(nframes))
-   WRITE (istring,fmt1) mysnap+frame 			! converting integer to string using an 'internal file'
-   cfdloc=trim(adjustl(sloc))//trim(istring)//filetype1		! store new filename
-   sdfloc=trim(adjustl(sloc))//trim(istring)//filetype2		
   
-   IF (ce) THEN
-    INQUIRE(file=TRIM(cfdloc),exist=ce2)
-    IF (ce2) THEN
-      CALL L3DCINIFIELDS()
-    ELSE
-      PRINT*, 'file "', TRIM(cfdloc), '" missing'
+   WRITE(*,*)  '..now loading in Lare variables..'
+   DO WHILE (frame.LE.(nframes))
+    IF (ce) THEN
+      INQUIRE(file=TRIM(cfdloc),exist=ce2)
+      IF (ce2) THEN
+       CALL L3DCINIFIELDS()
+      ELSE
+       PRINT*, 'file "', TRIM(cfdloc), '" missing'
+      ENDIF
     ENDIF
-   ENDIF
-   IF (se) THEN
-    INQUIRE(file=TRIM(sdfloc),exist=se2)
-    IF (se2) THEN
-      CALL L3DSINIFIELDS()
-    ELSE
-      PRINT*, 'file "', TRIM(sdfloc), '" missing'
+    IF (se) THEN
+      INQUIRE(file=TRIM(sdfloc),exist=se2)
+      IF (se2) THEN
+       CALL L3DSINIFIELDS()
+      ELSE
+       PRINT*, 'file "', TRIM(sdfloc), '" missing'
+      ENDIF
     ENDIF
-   ENDIF
     frame=frame+1
-  END DO 
+    WRITE (istring,fmt1) frame 			
+    cfdloc=trim(adjustl(sloc))//trim(istring)//filetype1
+    sdfloc=trim(adjustl(sloc))//trim(istring)//filetype2
+   END DO
+
+  IF (FIELDDUMP) THEN
+   ! quick way to check the fields read in are the same as those seen in Lare
+    PRINT*, 'DUMPING MAGNETIC AND VELOCITY FIELD DATA:'
+    OPEN(34, file=trim(adjustl(dloc))//'vx2idl.dat', form="unformatted")
+    WRITE(34) bx(1:nx,1:ny,1:nz,1:nframes)
+    CLOSE(34)
+    OPEN(35, file=trim(adjustl(dloc))//'vy2idl.dat', form="unformatted")
+    WRITE(35) by(1:nx,1:ny,1:nz,1:nframes)
+    CLOSE(35)
+    OPEN(36, file=trim(adjustl(dloc))//'vx2idl.dat', form="unformatted")
+    WRITE(36) bz(1:nx,1:ny,1:nz,1:nframes)
+    CLOSE(36)
+    OPEN(37, file=trim(adjustl(dloc))//'bx2idl.dat', form="unformatted")
+    WRITE(37) vx(1:nx,1:ny,1:nz,1:nframes)
+    CLOSE(37)
+    OPEN(38, file=trim(adjustl(dloc))//'by2idl.dat', form="unformatted")
+    WRITE(38) vy(1:nx,1:ny,1:nz,1:nframes)
+    CLOSE(38)
+    OPEN(39, file=trim(adjustl(dloc))//'bz2idl.dat', form="unformatted")
+    WRITE(39) vz(1:nx,1:ny,1:nz,1:nframes)
+    CLOSE(39)
+    PRINT*, 'DONE. TERMINATING.'  
+    STOP
+   ENDIF
+
   IF (rank == 0) start_time = MPI_WTIME()
 
  END SUBROUTINE mpi_initialise
 !----------------------------------------------------!
  SUBROUTINE mpi_initialise_2d
 !+ Initialisation for 2d Lare2d environment setup.  
-
-  INTEGER :: icoord
+  
+  INTEGER :: icoord, dims(c_ndims)
   INTEGER :: x_coords, y_coords
   LOGICAL :: periods(2), reorder, ce, se, ce2, se2
   INTEGER :: starts(2), sizes(2), subsizes(2)
@@ -308,6 +334,8 @@ CONTAINS
   dims = (/ nprocy, nprocx /)
   global_dims = (/nx_global, ny_global/)
 
+  CALL MPI_DIMS_CREATE(nproc, c_ndims, dims, errcode)
+
   IF (MAX(dims(1), 1)*MAX(dims(2), 1) .GT. nproc) THEN
     dims = 0
     IF (rank .EQ. 0) THEN
@@ -318,7 +346,7 @@ CONTAINS
     END IF
   END IF
 
-  CALL MPI_DIMS_CREATE(nproc, ndims, dims, errcode)
+  CALL MPI_DIMS_CREATE(nproc, c_ndims, dims, errcode)
 
   nprocx = dims(2)
   nprocy = dims(1)
@@ -327,7 +355,7 @@ CONTAINS
   reorder=.FALSE.
 
 
-  CALL MPI_CART_CREATE(MPI_COMM_WORLD, ndims, dims, periods, &
+  CALL MPI_CART_CREATE(MPI_COMM_WORLD, c_ndims, dims, periods, &
         reorder, comm, errcode)
 
   CALL MPI_COMM_RANK(comm, rank, errcode)
@@ -385,6 +413,8 @@ CONTAINS
    cell_ny_maxs(icoord) = nyp * ny0 + (icoord - nyp + 1) * (ny0 + 1)
   END DO  
 
+  print*, cx
+
   n_global_min(1) = cell_nx_mins(cx) - 1
   n_global_max(1) = cell_nx_maxs(cx)
 
@@ -410,7 +440,7 @@ CONTAINS
   sizes = (/ nx_global+1, ny_global+1 /)
 
   ! set up and commit the subarray type
-  CALL MPI_TYPE_CREATE_SUBARRAY(ndims, sizes, subsizes, starts, &
+  CALL MPI_TYPE_CREATE_SUBARRAY(c_ndims, sizes, subsizes, starts, &
 		 MPI_ORDER_FORTRAN, mpireal, subtype, errcode)
 
   CALL MPI_TYPE_COMMIT(subtype, errcode)
@@ -424,20 +454,21 @@ CONTAINS
    
   !ALLOCATE(rho(0:nx,0:ny,0:nz))
   !ALLOCATE(energy(0:nx,0:ny,0:nz)) 
-  ALLOCATE(vx(0:nx,0:ny,0:0,0:nframes-1))
-  ALLOCATE(vy(0:nx,0:ny,0:0,0:nframes-1))
-  ALLOCATE(vz(0:nx,0:ny,0:0,0:nframes-1))
-  ALLOCATE(bx(0:nx,0:ny,0:0,0:nframes-1))
-  ALLOCATE(by(0:nx,0:ny,0:0,0:nframes-1))
-  ALLOCATE(bz(0:nx,0:ny,0:0,0:nframes-1))
+  ALLOCATE(vx(1:nx,1:ny,1:1,1:nframes))
+  ALLOCATE(vy(1:nx,1:ny,1:1,1:nframes))
+  ALLOCATE(vz(1:nx,1:ny,1:1,1:nframes))
+  ALLOCATE(bx(1:nx,1:ny,1:1,1:nframes))
+  ALLOCATE(by(1:nx,1:ny,1:1,1:nframes))
+  ALLOCATE(bz(1:nx,1:ny,1:1,1:nframes))
   ALLOCATE(myx(0:nx))
   ALLOCATE(myy(0:ny))
-  ALLOCATE(ltimes(0:nframes-1))
+  ALLOCATE(ltimes(1:nframes))
   !ALLOCATE(eta(0:nx,0:ny,0:nz))
   !ALLOCATE(temperature(0:nx,0:ny,0:nz))
   !ALLOCATE(pressure(0:nx,0:ny,0:nz))   gflag=.false.
-  
-  WRITE (istring,fmt1) mysnap 			! convert first snapshot number to filename
+
+  frame=mysnap  
+  WRITE (istring,fmt1) frame 			! convert first snapshot number to filename
   cfdloc=trim(adjustl(sloc))//trim(istring)//filetype1		! create and query filenames
   sdfloc=trim(adjustl(sloc))//trim(istring)//filetype2
   
@@ -488,12 +519,7 @@ CONTAINS
    ENDIF 
 
    WRITE(*,*)  '..now loading in Lare variables..'
-   frame=0
-   DO WHILE (frame.LT.(nframes))
-    WRITE (istring,fmt1) mysnap+frame 			
-    cfdloc=trim(adjustl(sloc))//trim(istring)//filetype1
-    sdfloc=trim(adjustl(sloc))//trim(istring)//filetype2
-  
+   DO WHILE (frame.LE.(nframes))
     IF (ce) THEN
       INQUIRE(file=TRIM(cfdloc),exist=ce2)
       IF (ce2) THEN
@@ -511,10 +537,37 @@ CONTAINS
       ENDIF
     ENDIF
     frame=frame+1
+    WRITE (istring,fmt1) frame 			
+    cfdloc=trim(adjustl(sloc))//trim(istring)//filetype1
+    sdfloc=trim(adjustl(sloc))//trim(istring)//filetype2
    END DO
    
+   IF (FIELDDUMP) THEN
+   ! quick way to check the fields read in are the same as those seen in Lare
+    PRINT*, 'DUMPING MAGNETIC AND VELOCITY FIELD DATA:'
+    OPEN(34, file=trim(adjustl(dloc))//'vx2idl.dat', form="unformatted")
+    WRITE(34) bx(1:nx,1:ny,1,1:nframes)
+    CLOSE(34)
+    OPEN(35, file=trim(adjustl(dloc))//'vy2idl.dat', form="unformatted")
+    WRITE(35) by(1:nx,1:ny,1,1:nframes)
+    CLOSE(35)
+    OPEN(36, file=trim(adjustl(dloc))//'vx2idl.dat', form="unformatted")
+    WRITE(36) bz(1:nx,1:ny,1,1:nframes)
+    CLOSE(36)
+    OPEN(37, file=trim(adjustl(dloc))//'bx2idl.dat', form="unformatted")
+    WRITE(37) vx(1:nx,1:ny,1,1:nframes)
+    CLOSE(37)
+    OPEN(38, file=trim(adjustl(dloc))//'by2idl.dat', form="unformatted")
+    WRITE(38) vy(1:nx,1:ny,1,1:nframes)
+    CLOSE(38)
+    OPEN(39, file=trim(adjustl(dloc))//'bz2idl.dat', form="unformatted")
+    WRITE(39) vz(1:nx,1:ny,1,1:nframes)
+    CLOSE(39)
+    PRINT*, 'DONE. TERMINATING.'  
+    STOP
+   ENDIF
    !STOP
-    IF (rank == 0) start_time = MPI_WTIME()
+   IF (rank == 0) start_time = MPI_WTIME()
 
   END SUBROUTINE mpi_initialise_2d
 !--------------------------------------------------------!

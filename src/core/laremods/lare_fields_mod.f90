@@ -50,6 +50,8 @@ SUBROUTINE LAREFIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf)
   ENDIF
    
    B	=iquants(1:3)
+  ! print*, iquants(3)
+   
    Vf	=iquants(4:6)
    E	=iquants(7:9)
    j	=iquants(10:12)

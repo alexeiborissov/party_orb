@@ -63,20 +63,20 @@ SUBROUTINE RKDRIVE(RSTART,USTART,GAMMASTART,MU,T1,T2,EPS,H1,NOK,NBAD,TT,S,TOTAL)
 UNDERFLOW=0
 
  efct=oneuponAQ
- IF (writervs .eq. 1) WRITE(rvfilename,"(A,'RV',I8.8,'.dat')"),dlocR,pn    !
- IF (writervs .eq. 1)  open(29,file=rvfilename,recl=1024,status='unknown')     	 
- IF ((JTo2.eq.1).AND.(q.gt.0)) WRITE(tempfile2,"(A,'d',I8.8,'p.tmp')"),dlocR,pn    !
- IF ((JTo2.eq.1).AND.(q.lt.0)) WRITE(tempfile2,"(A,'d',I8.8,'e.tmp')"),dlocR,pn    !
- IF (JTo2.eq.1)  open(56,file=tempfile2,recl=1024,status='unknown')
- IF ((JTo3.eq.1).AND.(q.gt.0)) WRITE(tempfile3,"(A,'f',I8.8,'p.tmp')"),dlocR,pn    !
- IF ((JTo3.eq.1).AND.(q.lt.0)) WRITE(tempfile3,"(A,'f',I8.8,'e.tmp')"),dlocR,pn    !
- IF (JTo3.eq.1)  open(57,file=tempfile3,recl=1024,status='unknown')
+ IF (writervs) WRITE(rvfilename,"(A,'RV',I8.8,'.dat')"),dlocR,pn    !
+ IF (writervs)  open(29,file=rvfilename,recl=1024,status='unknown')     	 
+ IF ((JTo2).AND.(q.gt.0)) WRITE(tempfile2,"(A,'d',I8.8,'p.tmp')"),dlocR,pn    !
+ IF ((JTo2).AND.(q.lt.0)) WRITE(tempfile2,"(A,'d',I8.8,'e.tmp')"),dlocR,pn    !
+ IF (JTo2)  open(56,file=tempfile2,recl=1024,status='unknown')
+ IF ((JTo3).AND.(q.gt.0)) WRITE(tempfile3,"(A,'f',I8.8,'p.tmp')"),dlocR,pn    !
+ IF ((JTo3).AND.(q.lt.0)) WRITE(tempfile3,"(A,'f',I8.8,'e.tmp')"),dlocR,pn    !
+ IF (JTo3)  open(57,file=tempfile3,recl=1024,status='unknown')
  
 !print*, "R=", R
-print*, T
  CALL DERIVS (T, R, DRDT, U, DUDT,GAMMA,DGAMMADT,MU,T1,T2)
  CALL FIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf,T1,T2)
  bb=B/sqrt(dot(B,B))
+ 
  UE=cross(E,B)/dot(B,B)
  MODB = SQRT(B(1)*B(1) + B(2)*B(2) + B(3)*B(3))		! |B|
  oMODB=1.0_num/MODB
@@ -113,9 +113,7 @@ print*, T
  
   CALL DERIVS (T, R, DRDT, U, DUDT,GAMMA,DGAMMADT, MU, T1, T2)
   
-  ! print*, t
-   !print*, "write flag:",writervs
-  IF (writervs .eq. 1)  write(29,*)Tscl*(T-T1),	&   !1
+  IF (writervs)  write(29,*)Tscl*(T-T1),	&   !1
   Lscl*R,						&   !2,3,4
   Vscl*VPAR,						&   !5
   MU*sqrt(dot(B,B)),					&   !6
@@ -142,7 +140,6 @@ print*, T
   !PRINT*, Epar*Escl
   
   DO NSTP = 1, NSTPMAX
-   
    CALL DERIVS (T, R, DRDT, U, DUDT,GAMMA,DGAMMADT,MU, T1, T2)
    vpar=U/GAMMA
    ek=efct*(gamma-1)*m*c*c
@@ -166,7 +163,7 @@ print*, T
    !print 667, NSTP,NSTPMAX, R, B, E
    !667 format (I9,'/',I9,' R=[',ES9.2,',',ES9.2,',',ES9.2,'], B=[',ES9.2,',',ES9.2,',',ES9.2,'], E=[',ES9.2,',',ES9.2,',',ES9.2,']')
    
-    IF ((writervs.eq.1).AND.(everystepswitch)) write(29,*)Tscl*(T-T1),	&   !1
+    IF ((writervs).AND.(everystepswitch)) write(29,*)Tscl*(T-T1),	&   !1
     Lscl*R,						&   !2,3,4
     Vscl*VPAR,						&   !5
     MU*sqrt(dot(B,B)),					&   !6
@@ -202,7 +199,7 @@ print*, T
    
    !print 680, R
    !680 format ('R4=[',ES9.2,',',ES9.2,',',ES9.2,']')
-   
+    
     MODB = SQRT(B(1)*B(1) + B(2)*B(2) + B(3)*B(3))		! |B|
     oMODB=1.0_num/MODB
     GRADB(1) = DOT(B,DBDX)*oMODB
@@ -213,8 +210,11 @@ print*, T
     DMODBDS=dot(B,B(1)*DBDX+B(2)*DBDY+B(3)*DBDZ)*oMODB*oMODB
     gyrorad=MoAQ*Vscl/Bscl/gamma*sqrt(2.0_num*MU/sqrt(dot(B,B)))/lscl
     
-   IF (JTo2.eq.1) write(56,*) NSTP, T, H, DUDT, DRDT, DGAMMADT
-   IF (JTo3.eq.1) write(57,*)	NSTP, B, DBDX, DBDY, DBDZ, E, &
+   ! print*, 'NSTP:', nstp, 'T=', t
+   ! print*, '|b|=', modb
+    
+   IF (JTo2) write(56,*) NSTP, T, H, DUDT, DRDT, DGAMMADT
+   IF (JTo3) write(57,*)	NSTP, B, DBDX, DBDY, DBDZ, E, &
    			   	DEDX, DEDY,DEDZ, DRDT, DUDT, DGAMMADT, &
    			   	Epar, T, R, U, MODGRADB, gyrorad   
    
@@ -228,7 +228,7 @@ print*, T
     !print 1001, T
     !1001 format ("ERROR: small timestep, not enough points in T array, exiting at T=",ES9.2)
     print*, 'ERROR: small timestep, not enough points in T array, EXITING..'
-    IF (JTo4.eq.1) write(49,*), 'S'
+    IF (JTo4) write(49,*), 'S'
     DO I = 1,3
       RSTART(I)=R(I)
     ENDDO
@@ -246,6 +246,7 @@ print*, T
     
     CALL DERIVS (T, R, DRDT, U, DUDT,GAMMA,DGAMMADT,MU,T1,T2)
     CALL FIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf,T1,T2)
+    
  
     IF (((bourdinflag).OR.(l3dflag).OR.(l2dflag)).AND.(SUM(E).EQ.0.0_num).AND.(SUM(B).EQ.0.0_num) &
  			      .AND.(SUM(DBDX).EQ.0.0_num).AND.(SUM(DBDY).EQ.0.0_num) &
@@ -254,7 +255,7 @@ print*, T
 !			      .AND.(SUM(DBDT).EQ.0.0_num).AND.(SUM(DEDT).EQ.0.0_num) &
     			      .AND.(SUM(Vf).EQ.0.0_num)) THEN	! not technically beyond bourdin range
     print *, 'special box extent exit'
-    IF (JTo4.eq.1) write(49,*), 'B'
+    IF (JTo4) write(49,*), 'B'
     DO I = 1,3
       RSTART(I)=R(I)
     ENDDO
@@ -289,7 +290,7 @@ print*, T
     gyroperiod=1.0_num/gyrofreq
     gyrorad=MoAQ*Vscl/Bscl/gamma*sqrt(2.0_num*MU/sqrt(dot(B,B)))
     
-      IF (writervs .eq. 1)  write(29,*)Tscl*(T-T1),	&   !1
+      IF (writervs)  write(29,*)Tscl*(T-T1),	&   !1
       Lscl*R,						&   !2,3,4
       Vscl*VPAR,					&   !5
       MU*sqrt(dot(B,B)),				&   !6
@@ -312,7 +313,7 @@ print*, T
     ! normal exit (if time is up):
     IF((T-T2)*(T2-T1) >= 0.) THEN         !Are we done?
       PRINT *, 'time exit'
-      IF (JTo4.eq.1) write(49,*), 'T'
+      IF (JTo4) write(49,*), 'T'
       !print*, Tscl*T
       DO I = 1,3
         RSTART(I)=R(I)
@@ -329,7 +330,7 @@ print*, T
     			      .OR.(R(2).GE.ye(2)).OR.(R(2).LE.ye(1)) &
 			      .OR.(R(3).GE.ze(2)).OR.(R(3).LE.ze(1)))) THEN
     print *, 'box extent exit'
-    IF (JTo4.eq.1) write(49,*), 'B'
+    IF (JTo4) write(49,*), 'B'
     DO I = 1,3
       RSTART(I)=R(I)
     ENDDO
@@ -338,10 +339,9 @@ print*, T
     GAMMASTART = GAMMA
     RETURN
    ENDIF
-   
    IF ((H.lt.EPS).AND.(HNEXT.lt.EPS)) THEN ! both this and the next step are unbelievably small so quit before we get stuck!
     print *, 'timestep shrink'
-    IF (JTo4.eq.1) write(49,*), 'H'
+    IF (JTo4) write(49,*), 'H'
     DO I = 1,3
       RSTART(I)=R(I)
     ENDDO
@@ -352,8 +352,8 @@ print*, T
    ENDIF
    IF (UNDERFLOW.EQ.1) THEN	! JT fix to array overallocation in l.143
     print*, 'ERROR: timestep UNDERFLOW in RKQS, EXITING..'
-    IF (JTo4.eq.1) write(49,*), 'U'
-    IF (JTo .eq. 1) THEN
+    IF (JTo4) write(49,*), 'U'
+    IF (JTo3) THEN
       WRITE(tempfile,"(A,'O',I8.8,'.ufl')"),dlocR,pn    !
       open(55,file=tempfile,recl=1024,status='unknown')
     
@@ -402,18 +402,17 @@ print*, T
     RETURN 
    ENDIF
    
-   !print*, H
-   IF (HNEXT.lt.0.001*(T2-T1)) THEN	! timestep increase limited..(so that we actually see some outputs!)
+   ! timestep limiter
+   IF (HNEXT.lt.0.001*(T2-T1)) THEN	
     H=HNEXT
    ENDIF
    
-   
   ENDDO                      !if we get to nstpmax...
  PRINT *, 'NSTP Loop ended'
- IF (JTo4.eq.1) 	write(49,*), 'N'
- IF (JTo3 .eq. 1)  	CLOSE(57)
- IF (JTo2 .eq. 1)  	CLOSE(56)
- IF (writervs .eq. 1)	CLOSE(29)
+ IF (JTo4) 	write(49,*), 'N'
+ IF (JTo3)  	CLOSE(57)
+ IF (JTo2)  	CLOSE(56)
+ IF (writervs)	CLOSE(29)
  RETURN
 
 END SUBROUTINE RKDRIVE

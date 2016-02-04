@@ -20,6 +20,7 @@ CONTAINS
     CHARACTER(LEN=c_id_length) :: code_name, block_id, mesh_id, str1
     INTEGER :: blocktype, datatype, code_io_version, string_len
     INTEGER :: ierr, iblock, nblocks, geometry
+    INTEGER, DIMENSION(4) :: dims
     LOGICAL :: restart_flag    
     INTEGER :: mpireal = MPI_DOUBLE_PRECISION
     INTEGER :: sdf_num = c_datatype_real8
@@ -31,7 +32,7 @@ CONTAINS
 
     CALL get_job_id(jobid)
     step = -1
-    c_ndims=ndims
+    !c_ndims=ndims
     
     !ALLOCATE(coordinates(c_ndims), n_global_min(c_ndims), n_global_max(c_ndims))
     !ALLOCATE(extents(2*c_ndims))
@@ -159,6 +160,7 @@ IF (.NOT. restart_flag) THEN
     LOGICAL				:: restart_flag 
     INTEGER				:: mpireal = MPI_DOUBLE_PRECISION
     INTEGER				:: sdf_num = c_datatype_real8
+    INTEGER, DIMENSION(4) 		:: dims
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: data
     CHARACTER(LEN=c_id_length) 		:: code_name, block_id, mesh_id, str1
     
@@ -284,7 +286,7 @@ IF (.NOT. restart_flag) THEN
           ALLOCATE(data(-2:nx+2, -2:ny+2))
           CALL sdf_read_plain_variable(sdf_handle, data, &
               node_distribution, node_subarray)
-          vx(0:nx,0:ny,0,frame)=data(0:nx,0:ny)
+          vx(1:nx,1:ny,1,frame)=data(1:nx,1:ny)
           DEALLOCATE(data)
         ELSE IF (str_cmp(block_id, 'Vy')) THEN
    	  print*, 'variable:', block_id
@@ -293,7 +295,7 @@ IF (.NOT. restart_flag) THEN
 	  ALLOCATE(data(-2:nx+2, -2:ny+2))
           CALL sdf_read_plain_variable(sdf_handle, data, &
               node_distribution, node_subarray)
-	  vy(0:nx,0:ny,0,frame)=data(0:nx, 0:ny)
+	  vy(1:nx,1:ny,1,frame)=data(1:nx, 1:ny)
           DEALLOCATE(data)
         ELSE IF (str_cmp(block_id, 'Vz')) THEN
 	  print*, 'variable:', block_id
@@ -302,61 +304,48 @@ IF (.NOT. restart_flag) THEN
 	  ALLOCATE(data(-2:nx+2, -2:ny+2))
           CALL sdf_read_plain_variable(sdf_handle, data, &
               node_distribution, node_subarray)
-          vz(0:nx,0:ny,0,frame)=data(0:nx, 0:ny)
+          vz(1:nx,1:ny,1,frame)=data(1:nx, 1:ny)
 	  DEALLOCATE(data)
         ELSE IF (str_cmp(block_id, 'Bx')) THEN
    	  print*, 'variable:', block_id
           dims(1) = dims(1) - 1
           CALL check_dims(dims)
-	  !ALLOCATE(data(-2:nx+2, -1:ny+2))
-	  ALLOCATE(data(-2:nx+2, -2:ny+2))
-          CALL sdf_read_plain_variable(sdf_handle, data(-2:nx+2, -1:ny+2), &
+	  ALLOCATE(data(-2:nx+2, -1:ny+2))
+          CALL sdf_read_plain_variable(sdf_handle, data, &
               bx_distribution, bx_subarray)
-          data(-2:nx+2, -2)=data(-2:nx+2, -1)
-	  !bx=data(0:nx, 0:ny, 0:nz)
-	  !print*, data(1:5,0)
-	  DO ii=0,nx
-	   bx(ii,0:ny,0,frame)=stagger_bx_2d(data(ii,0:ny))
+	  ! destagger routines differ in 2d and 3d for B.    
+	  DO ii=1,nx
+	   bx(ii,1:ny,1,frame)=stagger_bx_2d(data(ii,1:ny))
 	  ENDDO
 	  DEALLOCATE(data)
         ELSE IF (str_cmp(block_id, 'By')) THEN
   	  print*, 'variable:', block_id
           IF (c_ndims >= 2) dims(2) = dims(2) - 1
           CALL check_dims(dims)
-          !ALLOCATE(data(-1:nx+2, -2:ny+2))
-	  ALLOCATE(data(-2:nx+2, -2:ny+2))
-          CALL sdf_read_plain_variable(sdf_handle, data(-1:nx+2, -2:ny+2), &
+          ALLOCATE(data(-1:nx+2, -2:ny+2))
+          CALL sdf_read_plain_variable(sdf_handle, data, &
               by_distribution, by_subarray)
-	  data(-2, -2:ny+2)=data(-1, -2:ny+2)
-          !print*, data(1:5,0)
-	  DO ii=0,ny
-	   by(0:nx,ii,0,frame)=stagger_by_2d(data(0:nx,ii))
+	  DO ii=1,ny
+	   by(1:nx,ii,1,frame)=stagger_by_2d(data(1:nx,ii))
 	  ENDDO 
 	  DEALLOCATE(data)
         ELSE IF (str_cmp(block_id, 'Bz')) THEN
           print*, 'variable:', block_id
 	  IF (c_ndims >= 3) dims(3) = dims(3) - 1
           CALL check_dims(dims)
-          !ALLOCATE(data(-1:nx+2, -1:ny+2))
-	  ALLOCATE(data(-2:nx+2, -2:ny+2))
-          CALL sdf_read_plain_variable(sdf_handle, data(-1:nx+2, -1:ny+2), &
+	  ALLOCATE(data(-1:nx+2, -1:ny+2))
+          CALL sdf_read_plain_variable(sdf_handle, data, &
               bz_distribution, bz_subarray)
-	  data(-2,-1:ny+2)=data(-1,-1:ny+2)
-	  data(-2:nx+2,-2)=data(-2:nx+2,-1)    
-	  !DO ii=0,nz
-	  ! print*, data(1:5,0)
-	   bz(0:nx,0:ny,0,frame)=stagger_bz(data(0:nx,0:ny))
-	  !ENDDO 
+	  bz(1:nx,1:ny,1,frame)=stagger_bz(data(1:nx,1:ny))
 	  DEALLOCATE(data)
         END IF
       END SELECT
     END DO
-
+   
 
     CALL sdf_close(sdf_handle)
     CALL MPI_BARRIER(comm, errcode)
   ! PRINT*, 'SUCCESSFULLY OPENED AND CLOSED SDF FILE!!'
-  !print*, vx(0:10,0,0)
 
   END SUBROUTINE L2DSINIFIELDS
 

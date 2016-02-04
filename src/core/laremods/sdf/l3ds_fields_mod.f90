@@ -24,12 +24,12 @@ CONTAINS
     LOGICAL :: restart_flag    
     INTEGER :: mpireal = MPI_DOUBLE_PRECISION
     INTEGER :: sdf_num = c_datatype_real8
+    INTEGER, DIMENSION(4) :: dims
     REAL(num) :: dx, dy, dz
 
     TYPE(sdf_file_handle) :: sdf_handle
 
     INTEGER :: step
-
 
     CALL get_job_id(jobid)
 
@@ -145,17 +145,12 @@ IF (.NOT. restart_flag) THEN
       END SELECT
     END DO
 
-
     CALL sdf_close(sdf_handle)
     CALL MPI_BARRIER(comm, errcode)
-  ! PRINT*, 'SUCCESSFULLY OPENED AND CLOSED SDF FILE!!'
-  !print*, vx(0:10,0,0)
 
-  END SUBROUTINE L3DSGRID
-  
+END SUBROUTINE L3DSGRID 
 !---------------------------------------------------------------!
-
-  SUBROUTINE L3DSINIFIELDS
+SUBROUTINE L3DSINIFIELDS
   ! subroutine to read in ONLY the Lare grid of a *.sdf file
 ! features several horrible hacks of the lare3d code. Sorry Tony Arber!
 
@@ -165,17 +160,15 @@ IF (.NOT. restart_flag) THEN
     LOGICAL				:: restart_flag 
     INTEGER				:: mpireal = MPI_DOUBLE_PRECISION
     INTEGER				:: sdf_num = c_datatype_real8
+    INTEGER, DIMENSION(4) :: dims
     REAL(num), DIMENSION(:, :, :), ALLOCATABLE :: data
     CHARACTER(LEN=c_id_length) 		:: code_name, block_id, mesh_id, str1
     
     TYPE(sdf_file_handle) :: sdf_handle
 
     INTEGER :: step
-    
-    c_ndims=ndims
 
     CALL get_job_id(jobid)
-
     step = -1
 
     IF (rank == 0) THEN
@@ -183,11 +176,10 @@ IF (.NOT. restart_flag) THEN
     END IF
 
     CALL sdf_open(sdf_handle, sdfloc, comm, c_sdf_read)
-
     CALL sdf_read_header(sdf_handle, step, time, code_name, code_io_version, &
     string_len, restart_flag)
 
-IF (.NOT. restart_flag) THEN
+    IF (.NOT. restart_flag) THEN
       IF (rank == 0) THEN
         PRINT*, '*** ERROR ***'
         PRINT*, 'SDF file is not a restart dump. Unable to continue.'
@@ -226,9 +218,7 @@ IF (.NOT. restart_flag) THEN
       !CALL create_ascii_header
     END IF
 
-    !IF (rank == 0) PRINT*, 'Input file contains', nblocks, 'blocks';
-
-    CALL sdf_read_blocklist(sdf_handle)	!!!UP TO READING THE BLOCKS. 
+    CALL sdf_read_blocklist(sdf_handle)
     CALL sdf_seek_start(sdf_handle)
 
     global_dims = (/ nx_global+1, ny_global+1, nz_global+1 /)
@@ -243,24 +233,13 @@ IF (.NOT. restart_flag) THEN
       CASE(c_blocktype_constant)
         !print*, 'constant:', block_id
         CYCLE
-        !IF (str_cmp(block_id, 'dt')) THEN
-        !  CALL sdf_read_srl(sdf_handle, dt_from_restart)
-        !ELSE IF (str_cmp(block_id, 'time_prev')) THEN
-        !  CALL sdf_read_srl(sdf_handle, time_prev)
-        !ELSE IF (str_cmp(block_id, 'visc_heating')) THEN
-        !  CALL sdf_read_srl(sdf_handle, total_visc_heating)
-        !  IF (rank /= 0) total_visc_heating = 0
-        !END IF
+
       CASE(c_blocktype_plain_mesh)
         IF (ndims /= c_ndims .OR. datatype /= sdf_num &
             .OR. .NOT.str_cmp(block_id, 'grid')) CYCLE
-        !print*, 'grid:', block_id
-        
 	CALL sdf_read_plain_mesh_info(sdf_handle, geometry, dims, extents)
-
         IF (geometry /= c_geometry_cartesian &
             .OR. ALL(dims(1:c_ndims) /= global_dims(1:c_ndims))) CYCLE
-
         ! Should read the grid from file at this point?
         x_min = extents(1)
         x_max = extents(c_ndims+1)
@@ -271,36 +250,26 @@ IF (.NOT. restart_flag) THEN
 
       CASE(c_blocktype_plain_variable)
         IF (ndims /= c_ndims .OR. datatype /= sdf_num) CYCLE
-
         CALL sdf_read_plain_variable_info(sdf_handle, dims, str1, mesh_id)
-
-        IF (.NOT.str_cmp(mesh_id, 'grid')) CYCLE
-	
-		
+        IF (.NOT.str_cmp(mesh_id, 'grid')) CYCLe	
         IF (str_cmp(block_id, 'Rho')) THEN
 	   CYCLE 
 !          CALL check_dims(dims)
 !          CALL sdf_read_plain_variable(sdf_handle, rho, &
 !              cell_distribution, cell_subarray)
-
         ELSE IF (str_cmp(block_id, 'Energy')) THEN
  	   CYCLE
  !         CALL check_dims(dims)
  !         CALL sdf_read_plain_variable(sdf_handle, energy, &
  !             cell_distribution, cell_subarray)
-
         ELSE IF (str_cmp(block_id, 'Vx')) THEN
           dims = dims - 1
 	  print*, 'variable:', block_id
           CALL check_dims(dims)
-	!  print*, 'dims:', dims
-	!  print*, nx
           ALLOCATE(data(-2:nx+2, -2:ny+2, -2:nz+2))
-	    
           CALL sdf_read_plain_variable(sdf_handle, data, &
               node_distribution, node_subarray)
-	     
-          vx(0:nx,0:ny,0:nz,frame)=data(0:nx,0:ny,0:nz)
+          vx(1:nx,1:ny,1:nz,frame)=data(1:nx,1:ny,1:nz)
           DEALLOCATE(data)
         ELSE IF (str_cmp(block_id, 'Vy')) THEN
    	  print*, 'variable:', block_id
@@ -309,7 +278,7 @@ IF (.NOT. restart_flag) THEN
 	  ALLOCATE(data(-2:nx+2, -2:ny+2, -2:nz+2))
           CALL sdf_read_plain_variable(sdf_handle, data, &
               node_distribution, node_subarray)
-	  vy(0:nx,0:ny,0:nz,frame)=data(0:nx, 0:ny, 0:nz)
+	  vy(1:nx,1:ny,1:nz,frame)=data(1:nx,1:ny, 1:nz)
           DEALLOCATE(data)
         ELSE IF (str_cmp(block_id, 'Vz')) THEN
 	  print*, 'variable:', block_id
@@ -318,7 +287,7 @@ IF (.NOT. restart_flag) THEN
 	  ALLOCATE(data(-2:nx+2, -2:ny+2, -2:nz+2))
           CALL sdf_read_plain_variable(sdf_handle, data, &
               node_distribution, node_subarray)
-          vz(0:nx,0:ny,0:nz,frame)=data(0:nx, 0:ny, 0:nz)
+          vz(1:nx,1:ny,1:nz,frame)=data(1:nx, 1:ny, 1:nz)
 	  DEALLOCATE(data)
         ELSE IF (str_cmp(block_id, 'Bx')) THEN
    	  print*, 'variable:', block_id
@@ -327,9 +296,9 @@ IF (.NOT. restart_flag) THEN
 	  ALLOCATE(data(-2:nx+2, -1:ny+2, -1:nz+2))
           CALL sdf_read_plain_variable(sdf_handle, data, &
               bx_distribution, bx_subarray)
-          !bx=data(0:nx, 0:ny, 0:nz)
-	  DO ii=0,nx
-	   bx(ii,0:ny,0:nz,frame)=stagger_bx(data(ii,0:ny,0:nz))
+	  !B-fields need destaggering:    
+	  DO ii=1,nx
+	   bx(ii,1:ny,1:nz,frame)=stagger_bx(data(ii,1:ny,1:nz))
 	  ENDDO
 	  DEALLOCATE(data)
         ELSE IF (str_cmp(block_id, 'By')) THEN
@@ -339,8 +308,8 @@ IF (.NOT. restart_flag) THEN
           ALLOCATE(data(-1:nx+2, -2:ny+2, -1:nz+2))
           CALL sdf_read_plain_variable(sdf_handle, data, &
               by_distribution, by_subarray)
-	  DO ii=0,ny
-	   by(0:nx,ii,0:nz,frame)=stagger_by(data(0:nx,ii,0:nz))
+	  DO ii=1,ny
+	   by(1:nx,ii,1:nz,frame)=stagger_by(data(1:nx,ii,1:nz))
 	  ENDDO 
 	  DEALLOCATE(data)
         ELSE IF (str_cmp(block_id, 'Bz')) THEN
@@ -350,8 +319,8 @@ IF (.NOT. restart_flag) THEN
           ALLOCATE(data(-1:nx+2, -1:ny+2, -2:nz+2))
           CALL sdf_read_plain_variable(sdf_handle, data, &
               bz_distribution, bz_subarray)
-	  DO ii=0,nz
-	   bz(0:nx,0:ny,ii,frame)=stagger_bz(data(0:nx,0:ny,ii))
+	  DO ii=1,nz
+	   bz(1:nx,1:ny,ii,frame)=stagger_bz(data(1:nx,1:ny,ii))
 	  ENDDO 
 	  DEALLOCATE(data)
         END IF
@@ -359,11 +328,9 @@ IF (.NOT. restart_flag) THEN
       END SELECT
     END DO
 
-
     CALL sdf_close(sdf_handle)
     CALL MPI_BARRIER(comm, errcode)
-  ! PRINT*, 'SUCCESSFULLY OPENED AND CLOSED SDF FILE!!'
-  !print*, vx(0:10,0,0)
+
 
   END SUBROUTINE L3DSINIFIELDS
 

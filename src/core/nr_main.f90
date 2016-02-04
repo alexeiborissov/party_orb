@@ -39,21 +39,34 @@ IMPLICIT NONE
 
  ! initial setup options depend on chosen environment
   IF ((str_cmp(FMOD, "L3D")).OR.(str_cmp(FMOD, "l3d"))) THEN
-   ndims=3
-   allocate(dims(ndims))
+   c_ndims=3
+   !allocate(dims(ndims))
    l3dflag=.TRUE.
    CALL MPI_INIT(errcode)
-   CALL mpi_initialise      ! mpi_routines.f90 
+   CALL mpi_initialise      ! mpi_routines.f90
+   IF (((nframes.GT.1)).AND.((T1/tscl.lt.ltimes(0)).OR.(T2/tscl.gt.ltimes(nframes-1)))) THEN
+    PRINT*, 'FATAL ERROR!' 
+    PRINT*, '(normalised) start/end times of particle range go beyond Lare grid of times'
+    PRINT*, '-> RETHINK normalisation, ADD in more snapshots, or LIMIT orbit lifetime.'
+    STOP
+   ENDIF
    PRINT*, '..evaluating particle array against lare grid..' 
   ELSE IF ((str_cmp(FMOD, "L2D")).OR.(str_cmp(FMOD, "l2d"))) THEN
    l2dflag=.TRUE.
-   ndims=2
-   c_ndims=ndims
-   allocate(dims(ndims))
+   c_ndims=2
+   !ndims=ndims
+   !allocate(dims(ndims))
    CALL MPI_INIT(errcode)
    CALL mpi_initialise_2d
    IF ((R1(3).NE.R2(3)).OR.(RSTEPS(3).GT.1)) THEN
-    PRINT*, 'Using Lare2d data - z position must be single valued!!'
+    PRINT*, '-FATAL ERROR-' 
+    PRINT*, 'Lare2D data requires single z position value in initial grid!!'
+    STOP
+   ENDIF
+   IF (((nframes.GT.1)).AND.((T1/tscl.lt.ltimes(1)).OR.(T2/tscl.gt.ltimes(nframes)))) THEN
+    PRINT*, '-FATAL ERROR-' 
+    PRINT*, '(normalised start/end times of particle range go beyond Lare grid of times)'
+    PRINT*, '-> RETHINK normalisation, ADD in more snapshots, or LIMIT orbit lifetime.'
     STOP
    ENDIF
   ELSE IF ((str_cmp(FMOD, "SEP")).OR.(str_cmp(FMOD, "sep"))) THEN
@@ -61,7 +74,7 @@ IMPLICIT NONE
     PRINT*, '..evaluating particle array against analytical field bounds..'
     
   ELSE IF ((str_cmp(FMOD, "CMT")).OR.(str_cmp(FMOD, "cmt"))) THEN
-      !CMT setup? we don't technically need to load in variables yet
+      !CMT  setup?
   ELSE IF ((str_cmp(FMOD, "TEST")).OR.(str_cmp(FMOD, "test"))) THEN
       !test setup?
   ELSE IF ((str_cmp(FMOD, "BOR")).OR.(str_cmp(FMOD, "bor"))) THEN
@@ -118,9 +131,7 @@ IMPLICIT NONE
   T1Keep=T1
   T2Keep=T2
 
-  writervs=1
-
-  IF (JTo4.eq.1)  open(48,file=dlocN//'finishnr.tmp',recl=1024,status='unknown')
+  IF (JTo4)  open(48,file=dlocR//'finishnr.tmp' ,recl=1024,status='unknown')
   PRINT*, ''
   IF (p_restart) THEN
    PRINT*, '--RESTARTING p_grid--'
@@ -163,7 +174,7 @@ IMPLICIT NONE
        
        !call progress(pn,nparticles) ! generate the progress bar.
        
-       IF (JTo4.eq.1) write(48,"(I4)",advance='no'), pn	   
+       IF (JTo4) write(48,"(I4)",advance='no'), pn	   
            
        IF (nparticles.gt.1000) THEN 
         print 1111, pn,nparticles, RSTART     
@@ -188,7 +199,6 @@ IMPLICIT NONE
   
        !VPARSTARTKEEP=VPARSTART
        RSTARTKEEP=RSTART
-
        !PRINT*,'Normalising:'
        RSTART=RSTART/Lscl
        RSTARTKEEP=RSTARTKEEP/Lscl
@@ -200,8 +210,6 @@ IMPLICIT NONE
        !PRINT*,'VPARSTART=',VPARSTART
        !PRINT*,'RSTART=',RSTART
        !PRINT*, '***********************************************************'
-
-       
        
        !call sub to calculate mu from Ekinetic (initial), vpar (to get Epar),
        !initial position and initial time.
@@ -244,28 +252,6 @@ IF ((str_cmp(FMOD, "LARE")).OR.(str_cmp(FMOD, "lare"))) THEN	!forget arrays at e
 
 !------------------------------------------------------------------------------!
  Contains
-!------------------------------------------------------------------------------!
-
-! Subroutine read_param
- !Namelist/inputdata/T1,T2,H1,EPS,MU,VPARSTART,RSTART
-
-  !   open(20,file='input.dat',status='unknown')
-   !  read(20,nml=inputdata)
-    ! close(20)
-   
- !End Subroutine read_param
-!------------------------------------------------------------------------------!
-!SUBROUTINE read_param
-! Namelist/inputdata/T1,T2,H1,EPS,AlphaSteps,AlphaMin,AlphaMax,R1,R2,RSteps,&
-! EkinLow,EKinHigh,EkinSteps,p_restart, p_restart_no, p_stop, p_stop_no!
-!
-!  OPEN(20,file='newinput.dat',status='unknown')
-!  ! JT: Alpha - angle between initial V & B
-!  !
-!  READ(20,nml=inputdata)
-!  CLOSE(20)!
-!
-!END SUBROUTINE read_param
 !------------------------------------------------------------------------------!
 SUBROUTINE CALC2_MU(mu,vparstart,Ekin,alpha,RSTART,T1,T2)
 

@@ -37,21 +37,34 @@ IMPLICIT NONE
     
  ! initial setup options depend on chosen environment
   IF ((str_cmp(FMOD, "L3D")).OR.(str_cmp(FMOD, "l3d"))) THEN
-   ndims=3
-   allocate(dims(ndims))
+   c_ndims=3
+   !allocate(dims(ndims))
    l3dflag=.TRUE.
    CALL MPI_INIT(errcode)
-   CALL mpi_initialise      ! mpi_routines.f90 
+   CALL mpi_initialise      ! mpi_routines.f90
+   IF (((nframes.GT.1)).AND.((T1/tscl.lt.ltimes(0)).OR.(T2/tscl.gt.ltimes(nframes-1)))) THEN
+    PRINT*, 'FATAL ERROR!' 
+    PRINT*, '(normalised) start/end times of particle range go beyond Lare grid of times'
+    PRINT*, '-> RETHINK normalisation, ADD in more snapshots, or LIMIT orbit lifetime.'
+    STOP
+   ENDIF
    PRINT*, '..evaluating particle array against lare grid..' 
   ELSE IF ((str_cmp(FMOD, "L2D")).OR.(str_cmp(FMOD, "l2d"))) THEN
    l2dflag=.TRUE.
-   ndims=2
-   c_ndims=ndims
-   allocate(dims(ndims))
+   c_ndims=2
+   !ndims=ndims
+   !allocate(dims(ndims))
    CALL MPI_INIT(errcode)
    CALL mpi_initialise_2d
    IF ((R1(3).NE.R2(3)).OR.(RSTEPS(3).GT.1)) THEN
-    PRINT*, 'Using Lare2d data - z position must be single valued!!'
+    PRINT*, '-FATAL ERROR-' 
+    PRINT*, 'Lare2D data requires single z position value in initial grid!!'
+    STOP
+   ENDIF
+   IF (((nframes.GT.1)).AND.((T1/tscl.lt.ltimes(1)).OR.(T2/tscl.gt.ltimes(nframes)))) THEN
+    PRINT*, '-FATAL ERROR-' 
+    PRINT*, '(normalised start/end times of particle range go beyond Lare grid of times)'
+    PRINT*, '-> RETHINK normalisation, ADD in more snapshots, or LIMIT orbit lifetime.'
     STOP
    ENDIF
   ELSE IF ((str_cmp(FMOD, "SEP")).OR.(str_cmp(FMOD, "sep"))) THEN
@@ -90,7 +103,8 @@ IMPLICIT NONE
     gflag=.true.
    ENDIF
    IF (gflag) THEN
-    WRITE(*,*) 'terminating: particle grid out of bounds.'
+    PRINT*, '-FATAL ERROR-'
+    WRITE(*,*) '(particle grid out of bounds)'
     STOP
    ELSE 
     WRITE(*,*) 'fine!'
@@ -113,11 +127,8 @@ IMPLICIT NONE
 
   T1Keep=T1
   T2Keep=T2
-  
-  writervs=1
  
-  !IF (JTo4.eq.1) WRITE(finfile,"(A,'finishr.tmp')"),dlocR
-  IF (JTo4.eq.1)  open(49,file=dlocR//'finishr.tmp' ,recl=1024,status='unknown')
+  IF (JTo4)  open(49,file=dlocR//'finishr.tmp' ,recl=1024,status='unknown')
   
   PRINT*, ''
   ! restart our calculation for certain particles within a given grid?
@@ -163,7 +174,7 @@ IMPLICIT NONE
        
        !call progress(pn,nparticles) ! generate the progress bar.
        
-       IF (JTo4.eq.1) write(49,"(I4)",advance='no'), pn	   
+       IF (JTo4) write(49,"(I4)",advance='no'), pn	   
 	   
        IF (nparticles.gt.1000) THEN 
         print 1000, pn,nparticles, RSTART     
