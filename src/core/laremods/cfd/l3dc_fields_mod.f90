@@ -20,18 +20,13 @@ SUBROUTINE L3DCGRID
 ! subroutine to read in ONLY the Lare grid of a *.cfd file
 ! features several horrible hacks of the lare3d code. Sorry Tony Arber!
 
- !CHARACTER(len=7) 				:: fmt1='(I4.4)', istring 	! format descriptor
- !CHARACTER(LEN = 20+data_dir_max_length) 	:: cfdloc
  CHARACTER(LEN = 20) :: name, class, mesh_name, mesh_class
  INTEGER, DIMENSION(3) :: dims
  REAL(num) :: time_d
  REAL(num), DIMENSION(3) :: extent
  REAL(num), DIMENSION(3) :: stagger
  INTEGER:: nblocks, type, nd, sof, snap
- 
-  
-!  WRITE (istring,fmt1) mysnap 			! converting integer to string using an 'internal file'
-!  cfdloc=trim(adjustl(sloc))//trim(istring)//filetype1		! store new filename
+
   
   print*, 'reading grid from:', cfdloc
   
@@ -102,14 +97,7 @@ SUBROUTINE L3DCINIFIELDS
     REAL(num), DIMENSION(3) :: extent
     REAL(num), DIMENSION(3) :: stagger
     REAL(num), DIMENSION(:, :, :), ALLOCATABLE :: data
-  
- 
- ! WRITE(istring,fmt1) mysnap 			! converting integer to string using an 'internal file'
- ! cfdloc=trim(adjustl(sloc))//trim(istring)//filetype1		! store new filename
-
-  !print*, 'adjustl(sloc):', adjustl(sloc)
-  !print*, 'trim(istring):', trim(istring)
-  
+    
 ! BEGIN HACK OF LAREXD READ:
   PRINT*, 'reading variables from: ', cfdloc   
 
@@ -118,13 +106,10 @@ SUBROUTINE L3DCINIFIELDS
    cfd_comm = comm
    cfd_rank = rank
    cfd_mode = MPI_MODE_RDONLY
-   !CALL cfd_open_read(cfdloc)
    CALL cfd_open(cfdloc, rank, comm, MPI_MODE_RDONLY)
    
    nblocks = cfd_get_nblocks()
 
-   !print*, 'nblocks= ', nblocks
-   !print*, nx_global
     DO ix = 1, nblocks
       CALL cfd_get_next_block_info_all(name, class, type)
       IF (rank == 0) PRINT *, ix,nblocks, name, class, type
@@ -185,9 +170,7 @@ SUBROUTINE L3DCINIFIELDS
         ! We're not interested in the other parameters, so if we're here,
         ! load up the data
         CALL cfd_get_3d_cartesian_variable_parallel(data, subtype)
-
         ! Now have the data, just copy it to correct place
-        	
 	!IF (str_cmp(name(1:3), "Rho")) THEN
         !  rho(0:nx, 0:ny, 0:nz) = data
         !END IF
@@ -196,51 +179,44 @@ SUBROUTINE L3DCINIFIELDS
         !END IF
 
         IF (str_cmp(name(1:2), "Vx")) THEN
-  	 PRINT *, ix,nblocks, name, class
-          vx(0:nx, 0:ny, 0:nz,frame) = data
+!  	 PRINT *, ix,nblocks, name, class
+          vx(1:nx, 1:ny, 1:nz,frame) = data(1:nx,1:ny,1:nz)
         END IF
         IF (str_cmp(name(1:2), "Vy")) THEN
- 	 PRINT *, ix,nblocks, name, class
-          vy(0:nx, 0:ny, 0:nz,frame) = data
+! 	 PRINT *, ix,nblocks, name, class
+          vy(1:nx, 1:ny, 1:nz,frame) = data(1:nx,1:ny,1:nz)
         END IF
         IF (str_cmp(name(1:2), "Vz")) THEN
-	 PRINT *, ix,nblocks, name, class
-          vz(0:nx, 0:ny, 0:nz,frame) = data
+!	 PRINT *, ix,nblocks, name, class
+          vz(1:nx, 1:ny, 1:nz,frame) = data(1:nx,1:ny,1:nz)
         END IF
-
         IF (str_cmp(name(1:2), "Bx")) THEN
 	! destagger on the fly to same locations as vx, vy, vz
-        !  bx(0:nx, 0:ny, 0:nz,frame) = data
-	  DO ii=0,nx
-	   !bx(ii,0:ny,0:nz)=stagger_right(stagger_up(data(ii,0:ny,0:nz)))
-	   bx(ii,0:ny,0:nz,frame)=stagger_bx(data(ii,0:ny,0:nz))
+	  DO ii=1,nx
+	   bx(ii,1:ny,1:nz,frame)=stagger_bx(data(ii,1:ny,1:nz))
 	  ENDDO  		
 	END IF
         IF (str_cmp(name(1:2), "By")) THEN
-	 PRINT *, ix,nblocks, name, class
-	! destagger on the fly to same locations as vx, vy, vz
+!	 PRINT *, ix,nblocks, name, class
         !  by(0:nx, 0:ny, 0:nz) = data
 	 DO ii=0,ny
-	  by(0:nx,ii,0:nz,frame)=stagger_by(data(0:nx,ii,0:nz))
+	  by(1:nx,ii,1:nz,frame)=stagger_by(data(1:nx,ii,1:nz))
 	 ENDDO 	 
         END IF
         IF (str_cmp(name(1:2), "Bz")) THEN
-	 PRINT *, ix,nblocks, name, class
-	! destagger on the fly to same locations as vx, vy, vz
-        !   bz(0:nx, 0:ny, 0:nz) = data
-	 DO ii=0,nz
-	  bz(0:nx,0:ny,ii,frame)=stagger_bz(data(0:nx,0:ny,ii))
+!	 PRINT *, ix,nblocks, name, class
+
+	 DO ii=1,nz
+	  bz(1:nx,1:ny,ii,frame)=stagger_bz(data(1:nx,1:ny,ii))
 	 ENDDO 
         END IF
 	
 	!IF (str_cmp(name(1:11), "Temperature")) THEN
         !  temperature(0:nx, 0:ny, 0:nz) = data
         !END IF
-	
 	!IF (str_cmp(name(1:8), "Pressure")) THEN
         !  pressure(0:nx, 0:ny, 0:nz) = data
         !END IF
-	
 	!IF (str_cmp(name(1:3), "eta")) THEN
         !  eta(0:nx, 0:ny, 0:nz) = data
         !END IF

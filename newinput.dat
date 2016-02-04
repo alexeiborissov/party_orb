@@ -11,12 +11,12 @@ AlphaMin=45.0
 AlphaMax=45.0
 
 R1(1)=-0.2E6
-R2(1)=-0.2E6
-RSTEPS(1)=1
+R2(1)=0.2E6
+RSTEPS(1)=4
 
-R1(2)=0.2E6
+R1(2)=-0.2E6
 R2(2)=0.2E6
-RSTEPS(2)=1
+RSTEPS(2)=4
 
 R1(3)=0.0E6
 R2(3)=0.0E6

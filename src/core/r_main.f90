@@ -128,7 +128,7 @@ IMPLICIT NONE
   T1Keep=T1
   T2Keep=T2
  
-  IF (JTo4)  open(49,file=dlocR//'finishr.tmp' ,recl=1024,status='unknown')
+  IF (JTo4) open(49,file=dlocR//'finishr.tmp' ,recl=1024,status='unknown')
   
   PRINT*, ''
   ! restart our calculation for certain particles within a given grid?
@@ -237,7 +237,7 @@ IMPLICIT NONE
    pos_no_x=pos_no_x+1
    pos_no_y=0
   END DO
- CLOSE(49)
+  IF (JTo4) CLOSE(49)
  !CALL MAKEFILE(time_no)
   
  !END DO

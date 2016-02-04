@@ -264,7 +264,7 @@ SUBROUTINE L3DSINIFIELDS
  !             cell_distribution, cell_subarray)
         ELSE IF (str_cmp(block_id, 'Vx')) THEN
           dims = dims - 1
-	  print*, 'variable:', block_id
+!	  print*, 'variable:', block_id
           CALL check_dims(dims)
           ALLOCATE(data(-2:nx+2, -2:ny+2, -2:nz+2))
           CALL sdf_read_plain_variable(sdf_handle, data, &
@@ -272,7 +272,7 @@ SUBROUTINE L3DSINIFIELDS
           vx(1:nx,1:ny,1:nz,frame)=data(1:nx,1:ny,1:nz)
           DEALLOCATE(data)
         ELSE IF (str_cmp(block_id, 'Vy')) THEN
-   	  print*, 'variable:', block_id
+ !  	  print*, 'variable:', block_id
           dims = dims - 1
           CALL check_dims(dims)
 	  ALLOCATE(data(-2:nx+2, -2:ny+2, -2:nz+2))
@@ -281,7 +281,7 @@ SUBROUTINE L3DSINIFIELDS
 	  vy(1:nx,1:ny,1:nz,frame)=data(1:nx,1:ny, 1:nz)
           DEALLOCATE(data)
         ELSE IF (str_cmp(block_id, 'Vz')) THEN
-	  print*, 'variable:', block_id
+!	  print*, 'variable:', block_id
           dims = dims - 1
           CALL check_dims(dims)
 	  ALLOCATE(data(-2:nx+2, -2:ny+2, -2:nz+2))
@@ -290,7 +290,7 @@ SUBROUTINE L3DSINIFIELDS
           vz(1:nx,1:ny,1:nz,frame)=data(1:nx, 1:ny, 1:nz)
 	  DEALLOCATE(data)
         ELSE IF (str_cmp(block_id, 'Bx')) THEN
-   	  print*, 'variable:', block_id
+ !  	  print*, 'variable:', block_id
           dims(1) = dims(1) - 1
           CALL check_dims(dims)
 	  ALLOCATE(data(-2:nx+2, -1:ny+2, -1:nz+2))
@@ -302,7 +302,7 @@ SUBROUTINE L3DSINIFIELDS
 	  ENDDO
 	  DEALLOCATE(data)
         ELSE IF (str_cmp(block_id, 'By')) THEN
-  	  print*, 'variable:', block_id
+  !	  print*, 'variable:', block_id
           IF (c_ndims >= 2) dims(2) = dims(2) - 1
           CALL check_dims(dims)
           ALLOCATE(data(-1:nx+2, -2:ny+2, -1:nz+2))
@@ -313,7 +313,7 @@ SUBROUTINE L3DSINIFIELDS
 	  ENDDO 
 	  DEALLOCATE(data)
         ELSE IF (str_cmp(block_id, 'Bz')) THEN
-          print*, 'variable:', block_id
+   !       print*, 'variable:', block_id
 	  IF (c_ndims >= 3) dims(3) = dims(3) - 1
           CALL check_dims(dims)
           ALLOCATE(data(-1:nx+2, -1:ny+2, -2:nz+2))
