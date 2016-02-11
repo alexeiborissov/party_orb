@@ -339,7 +339,7 @@ UNDERFLOW=0
     GAMMASTART = GAMMA
     RETURN
    ENDIF
-   IF ((H.lt.EPS).AND.(HNEXT.lt.EPS)) THEN ! both this and the next step are unbelievably small so quit before we get stuck!
+   IF ((abs(H).lt.EPS).AND.(abs(HNEXT).lt.EPS)) THEN ! both this and the next step are unbelievably small so quit before we get stuck!
     print *, 'timestep shrink'
     IF (JTo4) write(49,*), 'H'
     DO I = 1,3
