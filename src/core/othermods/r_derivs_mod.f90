@@ -261,8 +261,8 @@ SUBROUTINE DERIVS (T, R, DRDT, U, DUDT,GAMMA, DGAMMADT,MU, T1, T2)
 !-----------------------------------------------------------------------!
 !  UE=gamma*VE
 !
-!  !DUDT = sigma*DOT(UE,DlittleBDT)-oneosigma/epsilon*EPAR - oneosigma*MU/gamma*DMODBDS*fac			! full eqn
-!  DUDT = -oneosigma/epsilon*EPAR - oneosigma*MU/gamma*DMODBDS*fac						 ! ignore sigmas
+!  !DUDT = sigma*DOT(UE,DlittleBDT)-oneosigma/myepsil*EPAR - oneosigma*MU/gamma*DMODBDS*fac			! full eqn
+!  DUDT = -oneosigma/myepsil*EPAR - oneosigma*MU/gamma*DMODBDS*fac						 ! ignore sigmas
 !  
 !  GRADDRIFT = CROSS(B,GRADB)*oMODB*oMODB*ofacsq
 !  
@@ -274,12 +274,12 @@ SUBROUTINE DERIVS (T, R, DRDT, U, DUDT,GAMMA, DGAMMADT,MU, T1, T2)
 !  
 !  d5=vscl*vscl/c/c*Epar*U/gamma*CROSS(B,VE)*omodB*omodB*ofacsq*oneosigma
 !  
-!  !DRperpDT= VE-epsilon*(d1+d2+d3+d4)+d5								! full equation
-!  DRperpDT= VE-epsilon*(d1+d2)+d5									! ignore sigma, sigma^2
+!  !DRperpDT= VE-myepsil*(d1+d2+d3+d4)+d5								! full equation
+!  DRperpDT= VE-myepsil*(d1+d2)+d5									! ignore sigma, sigma^2
 !  
 !  DRDT =  DRperpDT + (U/gamma)*B*oMODB
 !  
-!  DgammaDT=vscl*vscl/c/c*oneosigma*oneosigma*(-oneoepsilon*(dot(DRperpDT,E)+oneosigma*U/gamma*dot(B,E)*oMODB)+MU/gamma*DmodBDT*fac)
+!  DgammaDT=vscl*vscl/c/c*oneosigma*oneosigma*(-oneomyepsil*(dot(DRperpDT,E)+oneosigma*U/gamma*dot(B,E)*oMODB)+MU/gamma*DmodBDT*fac)
 
 END SUBROUTINE DERIVS
 !-----------------------------------------------------------------------------!   

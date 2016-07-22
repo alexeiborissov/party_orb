@@ -10,7 +10,7 @@ MODULE global
  SAVE 
   
 !########################################################################## 
- CHARACTER(Len = 4), PARAMETER	:: FMOD='l2d' ! SWITCH BETWEEN FIELDS: "l3d","l2d", "SEP","CMT","test", or "bor"
+ CHARACTER(Len = 4), PARAMETER	:: FMOD='test' ! SWITCH BETWEEN FIELDS: "l3d","l2d", "SEP","CMT","test", or "bor"
  INTEGER, PARAMETER		:: mysnap=0001	!  no. of ****.cfd/****.sdf file (if "l3d")
  INTEGER, PARAMETER		:: nframes=2	! no. of frames
  CHARACTER(Len = 40)		:: sloc='../../lare2d_runs/l2d_uniformfield/Data/'
@@ -44,6 +44,10 @@ MODULE global
  LOGICAL			:: p_restart=.FALSE., p_stop=.FALSE. 		! are we starting or stopping midway through the arrays?
  LOGICAL			:: RANDOMISE_R, RANDOMISE_A, RANDOMISE_E	! switches for randomising position, angle and energy (TWO WORK CURRENTLY!)
 
+ LOGICAL		:: maxwellEfirst
+ REAL(num), PARAMETER	:: maxwellpeaktemp= 1e6_num
+ ! Local parameters
+REAL (num), PARAMETER  	:: one = 1.0_num, zero = 0.0_num
  
 ! CONSTANTS
  REAL(num), PARAMETER	:: pi = 3.1415926535897932_num
@@ -80,7 +84,7 @@ MODULE global
 
 ! BIRN ET AL NORMALISATION 
  REAL(num), PARAMETER	:: sigma=sqrt(Me/Mp), oneosigma=sqrt(Mp/Me) 				!sigma is small, oneosigma is big. 
- REAL(num), PARAMETER	:: epsilon=Mp/abs(Qe)/Bscl/tscl, oneoepsilon=abs(Qe)*Bscl*tscl/Mp	! epsilon small
+ REAL(num), PARAMETER	:: myepsil=Mp/abs(Qe)/Bscl/tscl, oneomyepsil=abs(Qe)*Bscl*tscl/Mp	! epsilon small
  REAL(num), PARAMETER	:: vce=vscl/sigma
 
 

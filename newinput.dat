@@ -23,8 +23,8 @@ R2(3)=0.0E6
 RSTEPS(3)=1
 
 EkinLow=2e1
-EkinHigh=2e1
-EkinSteps=1
+EkinHigh=2e2
+EkinSteps=100
 
 p_restart=.FALSE.
 p_restart_no=00
@@ -34,4 +34,4 @@ p_stop_no=00
 
 RANDOMISE_R=.FALSE.
 RANDOMISE_A=.FALSE.
-RANDOMISE_E=.FALSE./
+RANDOMISE_E=.TRUE./

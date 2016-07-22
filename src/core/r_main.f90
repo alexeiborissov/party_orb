@@ -8,6 +8,7 @@ USE M_DRIVERR, ONLY: RKDRIVE
 USE bourdin_fields, ONLY: bour_ini, bour_fini
 USE M_products, ONLY: DOT, CROSS
 USE M_fields, ONLY: FIELDS
+USE gammadist_mod, ONLY: random_gamma
 
 IMPLICIT NONE
 
@@ -153,7 +154,7 @@ IMPLICIT NONE
    pnmax=nparticles
   ENDIF
 
-  
+  maxwellEfirst=.TRUE.
   DO WHILE (pos_no_x .LE. RSTEPS(1)-1)
    DO WHILE (pos_no_y .LE. RSTEPS(2)-1)
     DO WHILE ((pos_no_z .LE. RSTEPS(3)-1).AND.(pn .LE. pnmax))
@@ -197,10 +198,14 @@ IMPLICIT NONE
        
        !pos_no_ekin starts from 0, if started from 1 then (stepekin-1)
        IF (RANDOMISE_E) THEN
-        Ekin=EKinLow+(EKinHigh-EKinLow)*pos_no_ekin/(EkinSteps*1.0d0)*tempe 
+        !Ekin=EKinLow+(EKinHigh-EKinLow)*pos_no_ekin/(EkinSteps*1.0d0)*tempe   
+	Ekin= random_gamma(1.5_num, kb*maxwellpeaktemp, maxwellEfirst)
+	EKin=Ekin*6.242e18  !(convert to eV)
+	maxwellEfirst = .FALSE.
        ELSE
         Ekin=EKinLow+(EKinHigh-EKinLow)*pos_no_ekin/(EkinSteps*1.0d0)
        ENDIF
+       print*, EKIN
        !alpha = pi/(no of steps+1) if fullangle is 1 (ie, steps from >=0 to >Pi (but not including Pi))
        !alpha = pi/2/(no of steps) if fullangle is 0 (steps from 0 to Pi/2 inclusive)
   

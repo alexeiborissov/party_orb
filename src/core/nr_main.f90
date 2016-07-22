@@ -8,6 +8,7 @@ USE mpi_routines
 USE bourdin_fields, ONLY: bour_ini, bour_fini
 USE M_products, ONLY: DOT, CROSS
 USE M_fields, ONLY: FIELDS
+USE gammadist_mod, ONLY: random_gamma
 
 IMPLICIT NONE
 
@@ -153,7 +154,7 @@ IMPLICIT NONE
    pnmax=nparticles
   ENDIF
 
-  
+  maxwellEfirst=.TRUE.
   DO WHILE (pos_no_x .LE. RSTEPS(1)-1)
    DO WHILE (pos_no_y .LE. RSTEPS(2)-1)
     DO WHILE ((pos_no_z .LE. RSTEPS(3)-1).AND.(pn .LE. pnmax))
@@ -187,10 +188,20 @@ IMPLICIT NONE
        T1=T1Keep
        T2=T2Keep
 
-       alpha = Alphamin+dalpha*(pos_no_alpha -1)	!added by S.Oskoui
+       IF (RANDOMISE_A) THEN
+        alpha = Alphamin+dalpha*(pos_no_alpha -1)*tempa	!added by S.Oskoui
+       ELSE
+        alpha = Alphamin+dalpha*(pos_no_alpha -1)	!added by S.Oskoui
+       ENDIF
        alpha = alpha*Pi/180.0d0				! RADEG: added by S.Oskoui
 
-       Ekin=EKinLow+(EKinHigh-EKinLow)*pos_no_ekin/(EkinSteps*1.0d0) 
+       IF (RANDOMISE_E) THEN
+        !Ekin=EKinLow+(EKinHigh-EKinLow)*pos_no_ekin/(EkinSteps*1.0d0)*tempe   
+	Ekin= random_gamma(1.5_num, kb*maxwellpeaktemp, maxwellEfirst)
+	maxwellEfirst = .FALSE.
+       ELSE
+        Ekin=EKinLow+(EKinHigh-EKinLow)*pos_no_ekin/(EkinSteps*1.0d0)
+       ENDIF
 
    !pos_no_ekin starts from 0, if started from 1 then (stepekin-1)
  
