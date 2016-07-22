@@ -247,7 +247,7 @@ IMPLICIT NONE
    pos_no_x=pos_no_x+1
    pos_no_y=0
   END DO
- CLOSE(48)
+  IF (JTo4) CLOSE(48)
  
  
  !END DO

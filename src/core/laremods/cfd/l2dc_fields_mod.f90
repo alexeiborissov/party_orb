@@ -12,7 +12,7 @@ MODULE l2dc_fields
   IMPLICIT NONE
   
   PRIVATE
-  PUBLIC :: L2DCGRID, L2DCINIFIELDS, L2DFIELDS
+  PUBLIC :: L2DCGRID, L2DCINIFIELDS!, L2DFIELDS
 
   CONTAINS 
 !-------------------------------------------------------------------  
@@ -20,13 +20,8 @@ SUBROUTINE L2DCGRID
 ! subroutine to read in ONLY the Lare grid of a *.cfd file
 ! features several horrible hacks of the lare3d code. Sorry Tony Arber!
 
- !CHARACTER(len=7) 				:: fmt1='(I4.4)', istring 	! format descriptor
- !CHARACTER(LEN = 20+data_dir_max_length) 	:: cfdloc
  CHARACTER(LEN = 20) :: name, class, mesh_name, mesh_class
- !INTEGER, DIMENSION(3) :: dims
  REAL(num) :: time_d
- !REAL(num), DIMENSION(3) :: extent
- !REAL(num), DIMENSION(3) :: stagger
  INTEGER:: nblocks, type, nd, sof, snap
  
  ALLOCATE(extent(2), stagger(2))
@@ -102,13 +97,6 @@ SUBROUTINE L2DCINIFIELDS
     REAL(num) :: time_d
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: data
   
-   !ALLOCATE(extent(2), stagger(2))
- 
- ! WRITE(istring,fmt1) mysnap 			! converting integer to string using an 'internal file'
- ! cfdloc=trim(adjustl(sloc))//trim(istring)//filetype1		! store new filename
-
-  !print*, 'adjustl(sloc):', adjustl(sloc)
-  !print*, 'trim(istring):', trim(istring)
   
 ! BEGIN HACK OF LAREXD READ:
   PRINT*, 'reading fields from: ', cfdloc   
@@ -118,13 +106,10 @@ SUBROUTINE L2DCINIFIELDS
    cfd_comm = comm
    cfd_rank = rank
    cfd_mode = MPI_MODE_RDONLY
-   !CALL cfd_open_read(cfdloc)
    CALL cfd_open(cfdloc, rank, comm, MPI_MODE_RDONLY)
    
    nblocks = cfd_get_nblocks()
 
-   !print*, 'nblocks= ', nblocks
-   !print*, nx_global
     DO ix = 1, nblocks
       CALL cfd_get_next_block_info_all(name, class, type)
       !IF (rank == 0) PRINT *, ix,nblocks, name, class, type
@@ -195,43 +180,43 @@ SUBROUTINE L2DCINIFIELDS
         !END IF
 
         IF (str_cmp(name(1:2), "Vx")) THEN
- 	 PRINT *, ix,nblocks, name, class
-          vx(0:nx, 0:ny, 0,frame) = data
+ !	 PRINT *, ix,nblocks, name, class
+          vx(1:nx, 1:ny, 1,frame) = data(1:nx, 1:ny)
         END IF
         IF (str_cmp(name(1:2), "Vy")) THEN
- 	 PRINT *, ix,nblocks, name, class
-          vy(0:nx, 0:ny, 0,frame) = data
+ !	 PRINT *, ix,nblocks, name, class
+          vy(1:nx, 1:ny, 1,frame) = data(1:nx, 1:ny)
         END IF
         IF (str_cmp(name(1:2), "Vz")) THEN
-	 PRINT *, ix,nblocks, name, class
-          vz(0:nx, 0:ny, 0,frame) = data
+!	 PRINT *, ix,nblocks, name, class
+          vz(1:nx, 1:ny, 1,frame) = data(1:nx, 1:ny)
         END IF
 
         IF (str_cmp(name(1:2), "Bx")) THEN
-	PRINT *, ix,nblocks, name, class
+!	PRINT *, ix,nblocks, name, class
 	! destagger on the fly to same locations as vx, vy, vz
         !  bx(0:nx, 0:ny, 0:nz,frame) = data
-	  DO ii=0,nx
+	  DO ii=1,nx
 	   !bx(ii,0:ny,0:nz)=stagger_right(stagger_up(data(ii,0:ny,0:nz)))
-	   bx(ii,0:ny,0,frame)=stagger_bx_2d(data(ii,0:ny))
+	   bx(ii,1:ny,1,frame)=stagger_bx_2d(data(ii,1:ny))
 	  ENDDO  		
 	END IF
         IF (str_cmp(name(1:2), "By")) THEN
-	PRINT *, ix,nblocks, name, class
+!	PRINT *, ix,nblocks, name, class
 	! destagger on the fly to same locations as vx, vy, vz
         !  by(0:nx, 0:ny, 0:nz) = data
 	!print*, 'BY started' 
-	 DO ii=0,ny
-	  by(0:nx,ii,0,frame)=stagger_by_2d(data(0:nx,ii))
+	 DO ii=1,ny
+	  by(1:nx,ii,1,frame)=stagger_by_2d(data(1:nx,ii))
 	 ENDDO
 	! print*, 'BY finished' 	 
         END IF
         IF (str_cmp(name(1:2), "Bz")) THEN
-	PRINT *, ix,nblocks, name, class
+!	PRINT *, ix,nblocks, name, class
 	!PRINT*, 'BZ reached'
 	! destagger on the fly to same locations as vx, vy, vz
         !   bz(0:nx, 0:ny, 0:nz) = data
-	  bz(0:nx,0:ny,0,frame)=stagger_bz(data(0:nx,0:ny))
+	  bz(1:nx,1:ny,1,frame)=stagger_bz(data(1:nx,1:ny))
         END IF
 	
 	!IF (str_cmp(name(1:11), "Temperature")) THEN
@@ -266,63 +251,5 @@ SUBROUTINE L2DCINIFIELDS
 
 END SUBROUTINE L2DCINIFIELDS
 !----------------------------------------------------------------------;   
-SUBROUTINE L2DFIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf)
-! wrapper module which calls a routine in lare_functions which interprets
-! values at sub grid particle locations, and converts these to correctly named variables.
-
- REAL(num), DIMENSION(3),INTENT(OUT)	:: B,E
- REAL(num), DIMENSION(3),INTENT(OUT)	:: DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT
- REAL(num), DIMENSION(3),INTENT(IN)	:: R
- REAL(num), DIMENSION(3)  		:: Vf, j
- REAL(num), INTENT(IN) 			:: T
- REAL(num), DIMENSION(36)		:: iquants
- INTEGER				:: ij, jjx, jjy, jjz
- LOGICAL				:: fxflag=.FALSE., fyflag=.FALSE.!, fzflag=.FALSE.
- !LOGICAL, INTENT(OUT)			:: ERR=.FALSE.
-
-
-
-  IF ((R(1).lt.myx(4)).and.(R(1).ge.myx(nx-3))) fxflag=.TRUE.
-  IF ((R(2).lt.myy(4)).and.(R(2).ge.myy(ny-3))) fyflag=.TRUE.
-  !IF ((R(3).lt.myz(4)).and.(R(3).ge.myz(nz-3))) fzflag=.TRUE.
- 
- ! I don't think this is an actual error since going beyond the grid will be detected and these results ignored
-  IF ((fxflag).OR.(fyflag)) THEN		
-   ! ERR=.TRUE.
-  !   PRINT*, 'particle not located on the grid:'
-  !   PRINT*, 'R:', R
-  !   PRINT*, 'x:', myx(4),'->', myx(nx-3)
-  !   PRINT*, 'y:', myy(4),'->', myy(ny-3)
-  !   PRINT*, 'z:', myz(4),'->', myz(nz-3)
-  !   STOP
-  !   PRINT*, '---'
-   RETURN
-  ENDIF
-
-   iquants=T2d(R,T)
-   ! compare array against itself for NANs         
-   IF (ALL(iquants.eq.iquants)) THEN
-   !everything is fine
-   ELSE
-    PRINT*, 'NAN DETECTED IN LARE OUTPUT'
-    !ERR=.TRUE.
-    STOP
-   ENDIF
-   
-   B	=iquants(1:3)
-   Vf	=iquants(4:6)
-   E	=iquants(7:9)
-   j	=iquants(10:12)
-   DBDX	=iquants(13:15)
-   DBDY	=iquants(16:18)
-   DBDZ	=iquants(19:21)
-   DEDX	=iquants(22:24)
-   DEDY	=iquants(25:27)
-   DEDZ	=iquants(28:30)
-   DBDT	=iquants(31:33)
-   DEDT	=iquants(34:36)  
-
-END SUBROUTINE L2DFIELDS
-
 END MODULE l2dc_fields
 

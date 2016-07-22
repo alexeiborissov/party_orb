@@ -279,7 +279,7 @@ IF (.NOT. restart_flag) THEN
  !             cell_distribution, cell_subarray)
         ELSE IF (str_cmp(block_id, 'Vx')) THEN
           dims = dims - 1
-	  print*, 'variable:', block_id
+!	  print*, 'variable:', block_id
           CALL check_dims(dims)
 	!  print*, 'dims:', dims
 	!  print*, nx
@@ -289,7 +289,7 @@ IF (.NOT. restart_flag) THEN
           vx(1:nx,1:ny,1,frame)=data(1:nx,1:ny)
           DEALLOCATE(data)
         ELSE IF (str_cmp(block_id, 'Vy')) THEN
-   	  print*, 'variable:', block_id
+!   	  print*, 'variable:', block_id
           dims = dims - 1
           CALL check_dims(dims)
 	  ALLOCATE(data(-2:nx+2, -2:ny+2))
@@ -298,7 +298,7 @@ IF (.NOT. restart_flag) THEN
 	  vy(1:nx,1:ny,1,frame)=data(1:nx, 1:ny)
           DEALLOCATE(data)
         ELSE IF (str_cmp(block_id, 'Vz')) THEN
-	  print*, 'variable:', block_id
+!	  print*, 'variable:', block_id
           dims = dims - 1
           CALL check_dims(dims)
 	  ALLOCATE(data(-2:nx+2, -2:ny+2))
@@ -307,7 +307,7 @@ IF (.NOT. restart_flag) THEN
           vz(1:nx,1:ny,1,frame)=data(1:nx, 1:ny)
 	  DEALLOCATE(data)
         ELSE IF (str_cmp(block_id, 'Bx')) THEN
-   	  print*, 'variable:', block_id
+ !  	  print*, 'variable:', block_id
           dims(1) = dims(1) - 1
           CALL check_dims(dims)
 	  ALLOCATE(data(-2:nx+2, -1:ny+2))
@@ -319,7 +319,7 @@ IF (.NOT. restart_flag) THEN
 	  ENDDO
 	  DEALLOCATE(data)
         ELSE IF (str_cmp(block_id, 'By')) THEN
-  	  print*, 'variable:', block_id
+  !	  print*, 'variable:', block_id
           IF (c_ndims >= 2) dims(2) = dims(2) - 1
           CALL check_dims(dims)
           ALLOCATE(data(-1:nx+2, -2:ny+2))
@@ -330,7 +330,7 @@ IF (.NOT. restart_flag) THEN
 	  ENDDO 
 	  DEALLOCATE(data)
         ELSE IF (str_cmp(block_id, 'Bz')) THEN
-          print*, 'variable:', block_id
+  !        print*, 'variable:', block_id
 	  IF (c_ndims >= 3) dims(3) = dims(3) - 1
           CALL check_dims(dims)
 	  ALLOCATE(data(-1:nx+2, -1:ny+2))
