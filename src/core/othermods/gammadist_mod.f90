@@ -1,5 +1,7 @@
 MODULE gammadist_mod
-!Contains functions to calculate the scalar and vector products
+!module to create random deviates according to a Maxwell-Boltzmann Distribution
+! (which is a Gamma Distribution, with shape 3/2 and scale kT)
+! called directly by the main program (JT 2016)
 
 USE GLOBAL
 
