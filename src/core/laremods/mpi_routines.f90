@@ -204,7 +204,7 @@ CONTAINS
    !ALLOCATE(pressure(0:nx,0:ny,0:nz))   gflag=.false.
 
   frame=mysnap
-  WRITE (istring,fmt1) frame 			! convert first snapshot number to filename
+  WRITE (istring,fmt1) mysnap 			! convert first snapshot number to filename
   cfdloc=trim(adjustl(sloc))//trim(istring)//filetype1	! query both cfd and sdf formats		
   sdfloc=trim(adjustl(sloc))//trim(istring)//filetype2
   
@@ -249,6 +249,8 @@ CONTAINS
    gflag=.true.
   ENDIF
   IF (.not. ((maxval(myz).ge.ze(2)).OR.(minval(myz).le.ze(1)))) THEN
+   print*, maxval(myz), ze(2)
+   print*, minval(myz), ze(1)
    WRITE(*,*) '..particle start positions beyond specified lare grid range in z'
    gflag=.true.
   ENDIF
@@ -260,7 +262,9 @@ CONTAINS
   ENDIF 
   
    WRITE(*,*)  '..now loading in Lare variables..'
-   DO WHILE (frame.LE.(nframes))
+   frame=1
+   DO WHILE (frame.LE.(nframes))  
+    print*, 'looping'
     IF (ce) THEN
       INQUIRE(file=TRIM(cfdloc),exist=ce2)
       IF (ce2) THEN
@@ -278,7 +282,7 @@ CONTAINS
       ENDIF
     ENDIF
     frame=frame+1
-    WRITE (istring,fmt1) frame 			
+    WRITE (istring,fmt1) mysnap+frame 			
     cfdloc=trim(adjustl(sloc))//trim(istring)//filetype1
     sdfloc=trim(adjustl(sloc))//trim(istring)//filetype2
    END DO
@@ -468,7 +472,7 @@ CONTAINS
   !ALLOCATE(pressure(0:nx,0:ny,0:nz))   gflag=.false.
 
   frame=mysnap  
-  WRITE (istring,fmt1) frame 			! convert first snapshot number to filename
+  WRITE (istring,fmt1) mysnap 			! convert first snapshot number to filename
   cfdloc=trim(adjustl(sloc))//trim(istring)//filetype1		! create and query filenames
   sdfloc=trim(adjustl(sloc))//trim(istring)//filetype2
   
@@ -519,6 +523,7 @@ CONTAINS
    ENDIF 
 
    WRITE(*,*)  '..now loading in Lare variables..'
+   frame=1
    DO WHILE (frame.LE.(nframes))
     IF (ce) THEN
       INQUIRE(file=TRIM(cfdloc),exist=ce2)
@@ -537,7 +542,7 @@ CONTAINS
       ENDIF
     ENDIF
     frame=frame+1
-    WRITE (istring,fmt1) frame 			
+    WRITE (istring,fmt1) mysnap+frame 			
     cfdloc=trim(adjustl(sloc))//trim(istring)//filetype1
     sdfloc=trim(adjustl(sloc))//trim(istring)//filetype2
    END DO
