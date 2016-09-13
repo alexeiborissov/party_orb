@@ -325,7 +325,8 @@ UNDERFLOW=0
     ENDIF
 
 ! JT exit conditions:
-   IF (((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR.(bourdinflag)) &
+   IF ( ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR. &
+   (bourdinflag).OR.(testflag).OR.(FREflag).OR.(CMTflag)) &
    			    .AND.((R(1).GE.xe(2)).OR.(R(1).LE.xe(1)) &	! beyond simulation range
     			      .OR.(R(2).GE.ye(2)).OR.(R(2).LE.ye(1)) &
 			      .OR.(R(3).GE.ze(2)).OR.(R(3).LE.ze(1)))) THEN
