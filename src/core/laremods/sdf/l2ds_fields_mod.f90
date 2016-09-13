@@ -213,6 +213,7 @@ IF (.NOT. restart_flag) THEN
       STOP
     END IF
 
+
     nblocks = sdf_read_nblocks(sdf_handle)
     jobid = sdf_read_jobid(sdf_handle)
 
