@@ -222,7 +222,7 @@ CONTAINS
    END IF
    IF (se) THEN
     print*, 'found new lare3d file (sdf)'
-    ALLOCATE(local_dims(c_ndims))
+    !ALLOCATE(local_dims(c_ndims))
     local_dims = (/nx, ny, nz/)
     CALL mpi_create_types_3d
     CALL L3DSGRID()
@@ -282,7 +282,7 @@ CONTAINS
       ENDIF
     ENDIF
     frame=frame+1
-    WRITE (istring,fmt1) mysnap+frame 			
+    WRITE (istring,fmt1) mysnap+frame-1 			
     cfdloc=trim(adjustl(sloc))//trim(istring)//filetype1
     sdfloc=trim(adjustl(sloc))//trim(istring)//filetype2
    END DO
@@ -490,7 +490,7 @@ CONTAINS
    END IF
    IF (se) THEN
     print*, 'found new lare2d file (sdf)'
-    ALLOCATE(local_dims(c_ndims))
+    !ALLOCATE(local_dims(c_ndims))
     local_dims = (/nx, ny/)
     CALL mpi_create_types_2d
     CALL L2DSGRID()
@@ -542,7 +542,7 @@ CONTAINS
       ENDIF
     ENDIF
     frame=frame+1
-    WRITE (istring,fmt1) mysnap+frame 			
+    WRITE (istring,fmt1) mysnap+frame-1 			
     cfdloc=trim(adjustl(sloc))//trim(istring)//filetype1
     sdfloc=trim(adjustl(sloc))//trim(istring)//filetype2
    END DO
