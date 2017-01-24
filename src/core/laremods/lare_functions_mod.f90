@@ -21,10 +21,10 @@ FUNCTION stagger_bx(var)
     mnz=size(var,2)
     
     !staggering right
-    stagger_bx(1:mny-1,1:mnz)=1.5_num*(var(1:mny-1,1:mnz)+var(2:mny,1:mnz))
+    stagger_bx(1:mny-1,1:mnz)=0.5_num*(var(1:mny-1,1:mnz)+var(2:mny,1:mnz))
     stagger_bx(mny,1:mnz)=var(mny,1:mnz)
     !staggering up
-    stagger_bx(1:mny,1:mnz-1)=1.5_num*(stagger_bx(1:mny,1:mnz-1)+stagger_bx(1:mny,2:mnz))
+    stagger_bx(1:mny,1:mnz-1)=0.5_num*(stagger_bx(1:mny,1:mnz-1)+stagger_bx(1:mny,2:mnz))
     stagger_bx(1:mny,mnz)=stagger_bx(1:mny,mnz)
        
     RETURN

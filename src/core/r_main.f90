@@ -178,13 +178,12 @@ IMPLICIT NONE
        
        IF (JTo4) write(49,"(I4)",advance='no'), pn	   
 	   
-       IF (nparticles.gt.1000) THEN 
-        print 1000, pn,nparticles, RSTART     
-        1000 format ("particle no. ",i4,"/",i4, ", R=(",ES9.2,",",ES9.2,",",ES9.2,")")
-       ELSE 
-        print 1001, pn,nparticles, RSTART     
-        1001 format ("particle no. ",i3,"/",i3, ", R=(",ES9.2,",",ES9.2,",",ES9.2,")")
-       ENDIF    
+       !IF (nparticles.gt.1000) THEN 
+        1000 format ("particle no. ",i7,"/",i7, ", R=(",ES9.2,",",ES9.2,",",ES9.2,")")
+       !ELSE     
+       ! 1000 format ("particle no. ",i3,"/",i3, ", R=(",ES9.2,",",ES9.2,",",ES9.2,")")
+       !ENDIF    
+	print 1000, pn,nparticles, RSTART
 
        T1=T1Keep
        T2=T2Keep

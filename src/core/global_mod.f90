@@ -10,10 +10,10 @@ MODULE global
  SAVE 
   
 !########################################################################## 
- CHARACTER(Len = 4), PARAMETER	:: FMOD='test' ! SWITCH BETWEEN FIELDS: "l3d","l2d", "SEP","CMT","test", or "bor"
- INTEGER, PARAMETER		:: mysnap=0001	!  no. of ****.cfd/****.sdf file (if "l3d")
- INTEGER, PARAMETER		:: nframes=2	! no. of frames
- CHARACTER(Len = 40)		:: sloc='../../lare2d_runs/l2d_uniformfield/Data/'
+ CHARACTER(Len = 4), PARAMETER	:: FMOD='l3d' ! SWITCH BETWEEN FIELDS: "l3d","l2d", "SEP","CMT","test", or "bor"
+ INTEGER, PARAMETER		:: mysnap=0020	!  no. of ****.cfd/****.sdf file (if "l3d")
+ INTEGER, PARAMETER		:: nframes=1	! no. of frames
+ CHARACTER(Len = 40)		:: sloc='../../alan_manyloopmedres_data/'
 
 !##########################################################################
 ! now some stuff required to plug in lare data 
@@ -114,9 +114,9 @@ REAL (num), PARAMETER  	:: one = 1.0_num, zero = 0.0_num
  ! (required by LARE modules)
 
  !REAL(num), DIMENSION(2), PARAMETER	:: xe=(/0.1_num,99.9_num/),ye=(/-0.1_num,99.9_num/),ze=(/-19.5_num,79.5_num/)
- REAL(num), DIMENSION(2), PARAMETER	:: xe=(/-0.9_num,0.9_num/),ye=(/-0.9_num,0.9_num/),ze=(/-100.00_num,100.0_num/)
+ REAL(num), DIMENSION(2), PARAMETER	:: xe=(/-4.75_num,4.75_num/),ye=(/-4.75_num,4.75_num/),ze=(/-9.5_num,9.5_num/)
  !REAL(num), PARAMETER			:: eta=0.001_num, jcrit=25.0_num
- REAL(num), PARAMETER			:: eta=0.0_num, jcrit=20.0_num, rwidth=0.05_num
+ REAL(num), PARAMETER			:: eta=0.001_num, jcrit=5.0_num, rwidth=0.05_num, etabkg=0.0_num
  !REAL(num), PARAMETER			:: eta=0.001_num, jcrit=20.0_num, rwidth=0.5_num
 
  CHARACTER(Len = 5), PARAMETER 	:: dloc='Data/'
@@ -124,8 +124,8 @@ REAL (num), PARAMETER  	:: one = 1.0_num, zero = 0.0_num
 
  INTEGER, PARAMETER				:: mpireal = MPI_DOUBLE_PRECISION
  !INTEGER, PARAMETER				:: nx_global=64, ny_global=64, nz_global=64		! julie's lare3d cfd config
- !INTEGER, PARAMETER				:: nx_global=120, ny_global=120, nz_global=480		! alan's lare3d sdf config
- INTEGER, PARAMETER				:: nx_global=128, ny_global=128, nz_global=1		! James's lare2d cfd config
+ INTEGER, PARAMETER				:: nx_global=240, ny_global=240, nz_global=480		! alan's lare3d sdf config
+ !INTEGER, PARAMETER				:: nx_global=128, ny_global=128, nz_global=1		! James's lare2d cfd config
  INTEGER, PARAMETER 				:: data_dir_max_length = 64
  INTEGER 					:: nx, ny, nz	
  INTEGER, DIMENSION(:), ALLOCATABLE		:: dims
