@@ -30,7 +30,7 @@ MODULE global
  LOGICAL, PARAMETER		:: writervs=.TRUE.					! ARE WE WRITING? (ALWAYS TRUE!) 
  LOGICAL, PARAMETER		:: JTo=.TRUE., JTo2=.FALSE., JTo3=.FALSE., JTO4=.TRUE.	! various debugging switches (2&3 output every NSTP)
  LOGICAL, PARAMETER		:: FIELDDUMP=.FALSE.					! switch to dump the lare fields to unformatted data files.
- LOGICAL, PARAMETER		:: everystepswitch=.TRUE.				! dumps EVERY NSTP to each particle data file.
+ LOGICAL, PARAMETER		:: everystepswitch=.FALSE.				! dumps EVERY NSTP to each particle data file.
  
 !PARTICLE quantities: 								
  REAL(num), DIMENSION(3) 	:: R1,R2, tempr
@@ -47,7 +47,7 @@ MODULE global
  LOGICAL		:: maxwellEfirst
  REAL(num), PARAMETER	:: maxwellpeaktemp= 1e6_num
  ! Local parameters
-REAL (num), PARAMETER  	:: one = 1.0_num, zero = 0.0_num
+ REAL (num), PARAMETER  	:: one = 1.0_num, zero = 0.0_num
  
 ! CONSTANTS
  REAL(num), PARAMETER	:: pi = 3.1415926535897932_num
@@ -62,7 +62,7 @@ REAL (num), PARAMETER  	:: one = 1.0_num, zero = 0.0_num
  REAL(num), PARAMETER	:: oneotwelve=1.0_num/12.0_num 
 
 ! NORMALISING SCALES 
- REAL(num), PARAMETER	:: Lscl = 1e6_num     		! 10 Mega meters (1e7)
+ REAL(num), PARAMETER	:: Lscl = 1e5_num     		! 10 Mega meters (1e7)
  REAL(num), PARAMETER	:: Bscl = 0.001_num		! 100 Gauss 	 (0.01)
  !REAL(num), PARAMETER	:: Bscl = 1.0_num 		! 100 Gauss 	 (0.01)
  !REAL(num), PARAMETER	:: Escl = 1e3			! 10V/cm	 (1e3)
@@ -102,22 +102,24 @@ REAL (num), PARAMETER  	:: one = 1.0_num, zero = 0.0_num
  REAL(num), PARAMETER	:: rat1=20.0_num	!r1=ratio of B1 to B0, B1=r1*B0 (in paper B1=20B0)
  REAL(num), PARAMETER	:: rat2=1e-6_num	!r2=ratio of a to z0, a=r2*z0	(in paper a=1/2,z0=5)
  REAL(num), PARAMETER	:: rat3=0.2_num		!r3=ratio of l to z0, l=r3*z0	(in paper ll=1,z0=5)
+
+  ! Kinematic Flux emergence model
+ REAL(num), PARAMETER	:: Lx=sqrt(2.0_num)*5.0_num, Ly=1.0_num, Lz=5.0_num
+ REAL(num), PARAMETER	:: tau=1.0_num*Tscl, tau_n=tau/Tscl
  REAL(num), PARAMETER	:: b0=Bscl, E0=Escl		! field setup in WS&H (2011)
  REAL(num), PARAMETER	:: L=Lscl, oL=1.0_num/L		! field setup in WS&H (2011)
  REAL(num), PARAMETER	:: z0=5.0_num*L
  REAL(num), PARAMETER	:: b1=rat1*b0, a=rat2*z0, ll=rat3*z0, oa=1.0_num/a, oll=1.0_num/ll 
  REAL(num), PARAMETER	:: xc=0.0_num, yc=0.0_num, zc=0.0_num		! center of flux ring
- REAL(num), PARAMETER	:: tau_n=1.0_num, tau=1.0_num*Tscl
-! REAL(num), PARAMETER	:: xymult=10.0_num, zmult=1.0_num
+
 
  ! Lare field parameters
  ! (required by LARE modules)
 
  !REAL(num), DIMENSION(2), PARAMETER	:: xe=(/0.1_num,99.9_num/),ye=(/-0.1_num,99.9_num/),ze=(/-19.5_num,79.5_num/)
- REAL(num), DIMENSION(2), PARAMETER	:: xe=(/-4.75_num,4.75_num/),ye=(/-4.75_num,4.75_num/),ze=(/-9.5_num,9.5_num/)
- !REAL(num), PARAMETER			:: eta=0.001_num, jcrit=25.0_num
+  REAL(num), DIMENSION(2), PARAMETER	:: xe=(/-10.0_num,10.0_num/),ye=(/-10.0_num,10.0_num/),ze=(/0.0_num,80.0_num/)
  REAL(num), PARAMETER			:: eta=0.001_num, jcrit=5.0_num, rwidth=0.05_num, etabkg=0.0_num
- !REAL(num), PARAMETER			:: eta=0.001_num, jcrit=20.0_num, rwidth=0.5_num
+
 
  CHARACTER(Len = 5), PARAMETER 	:: dloc='Data/'
  CHARACTER(Len = 11) 		:: dlocN=dloc//'DataN/',dlocR=dloc//'DataR/'
@@ -143,7 +145,7 @@ REAL (num), PARAMETER  	:: one = 1.0_num, zero = 0.0_num
  
  !---BOURDIN DATA DEFINITIONS---! 
  CHARACTER(Len = 8)	:: filetypeb='.bin_f77'
- LOGICAL		:: bourdinflag, l3dflag, analyticalflag, l2dflag
+ LOGICAL		:: bourdinflag, l3dflag, analyticalflag, l2dflag,FREflag, testflag, CMTflag
  REAL(num), DIMENSION(2)	:: xee, yee, zee
   
   ! MPI data
