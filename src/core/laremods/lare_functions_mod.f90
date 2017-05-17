@@ -565,12 +565,6 @@ FUNCTION T2d(R,T)
     T2d(35)=(Eyt(2)-Eyt(1))*odgt(l(3))
     T2d(36)=(Ezt(2)-Ezt(1))*odgt(l(3))
 
-
-    DEALLOCATE(bxt, byt, bzt,vxt, vyt, vzt, Ext, Eyt, Ezt, jxt, jyt, jzt)
-    DEALLOCATE(dbxdxt,dbxdyt,dbydxt,dbydyt,dbzdxt,dbzdyt)
-    DEALLOCATE(dExdxt,dExdyt,dEydxt,dEydyt,dEzdxt,dEzdyt)
-    DEALLOCATE(dgt,odgt)
-
    ELSE
    
     T2d(1)=bxt(1)
@@ -606,6 +600,10 @@ FUNCTION T2d(R,T)
     T2d(31:36)=0.0_num
    ENDIF
    
+   DEALLOCATE(bxt, byt, bzt,vxt, vyt, vzt, Ext, Eyt, Ezt, jxt, jyt, jzt)
+   DEALLOCATE(dbxdxt,dbxdyt,dbydxt,dbydyt,dbzdxt,dbzdyt)
+   DEALLOCATE(dExdxt,dExdyt,dEydxt,dEydyt,dEzdxt,dEzdyt)
+   DEALLOCATE(dgt,odgt)
 
    RETURN
 
@@ -620,7 +618,7 @@ FUNCTION T3d(R,T)
    REAL(num), DIMENSION(3), INTENT(IN)		:: R		!actual position
    REAL(num), INTENT(IN)			:: T
    REAL(num), DIMENSION(36)			:: T3d
-   REAL(num)					:: temp,  modj 
+   REAL(num)					:: temp,  modj
    REAL(num), DIMENSION(3)			:: dg, odg, coffset
    REAL(num), DIMENSION(:), ALLOCATABLE		:: dgt, odgt
    REAL(num), DIMENSION(:), ALLOCATABLE		:: bxt, byt, bzt,vxt, vyt, vzt, Ext, Eyt, Ezt, jxt, jyt, jzt
@@ -667,7 +665,6 @@ FUNCTION T3d(R,T)
 
 ! No guarantee we have more than one frame. IF we have one, this routine doesn't bother interpolating in time
   IF (nframes.gt.1) THEN
-  
    ALLOCATE(dgt(nframes-1),odgt(nframes-1))
    dgt=ltimes(2:nframes)-ltimes(1:nframes-1)
    odgt=1.0_num/dgt
@@ -1204,7 +1201,7 @@ FUNCTION T3d(R,T)
    IF (nframes.gt.1) THEN
 
     T3d(1)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),bxt(1),bxt(2))
-    T3d(2)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),byt(1),byt(2))  
+    T3d(2)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),byt(1),byt(2))
     T3d(3)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),bzt(1),bzt(2))
     T3d(4)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),vxt(1),vxt(2))
     T3d(5)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),vyt(1),vyt(2))
@@ -1240,11 +1237,6 @@ FUNCTION T3d(R,T)
     T3d(35)=(Eyt(2)-Eyt(1))*odgt(l(4))
     T3d(36)=(Ezt(2)-Ezt(1))*odgt(l(4))
 
-
-    DEALLOCATE(bxt, byt, bzt,vxt, vyt, vzt, Ext, Eyt, Ezt, jxt, jyt, jzt)
-    DEALLOCATE(dbxdxt,dbxdyt,dbxdzt,dbydxt,dbydyt,dbydzt,dbzdxt,dbzdyt,dbzdzt)
-    DEALLOCATE(dExdxt,dExdyt,dExdzt,dEydxt,dEydyt,dEydzt,dEzdxt,dEzdyt,dEzdzt)
-    DEALLOCATE(dgt,odgt)
    ELSE
    
     T3d(1)=bxt(1)
@@ -1279,6 +1271,11 @@ FUNCTION T3d(R,T)
     T3d(30)=dEzdzt(1)
     T3d(31:36)=0.0_num
    ENDIF
+   
+   DEALLOCATE(bxt, byt, bzt,vxt, vyt, vzt, Ext, Eyt, Ezt, jxt, jyt, jzt)
+   DEALLOCATE(dbxdxt,dbxdyt,dbxdzt,dbydxt,dbydyt,dbydzt,dbzdxt,dbzdyt,dbzdzt)
+   DEALLOCATE(dExdxt,dExdyt,dExdzt,dEydxt,dEydyt,dEydzt,dEzdxt,dEzdyt,dEzdzt)
+   DEALLOCATE(dgt,odgt)
    
    RETURN
 
