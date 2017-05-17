@@ -163,7 +163,7 @@ UNDERFLOW=0
    !print 667, NSTP,NSTPMAX, R, B, E
    !667 format (I9,'/',I9,' R=[',ES9.2,',',ES9.2,',',ES9.2,'], B=[',ES9.2,',',ES9.2,',',ES9.2,'], E=[',ES9.2,',',ES9.2,',',ES9.2,']')
    
-    IF ((writervs).AND.(everystepswitch)) write(29,*)Tscl*(T-T1),	&   !1
+   IF ((writervs).AND.(everystepswitch)) write(29,*)Tscl*(T-T1),	&   !1
     Lscl*R,						&   !2,3,4
     Vscl*VPAR,						&   !5
     MU*sqrt(dot(B,B)),					&   !6
@@ -290,7 +290,7 @@ UNDERFLOW=0
     gyroperiod=1.0_num/gyrofreq
     gyrorad=MoAQ*Vscl/Bscl/gamma*sqrt(2.0_num*MU/sqrt(dot(B,B)))
     
-      IF (writervs)  write(29,*)Tscl*(T-T1),	&   !1
+    IF (writervs)  write(29,*)Tscl*(T-T1),	&   !1
       Lscl*R,						&   !2,3,4
       Vscl*VPAR,					&   !5
       MU*sqrt(dot(B,B)),				&   !6
@@ -325,12 +325,65 @@ UNDERFLOW=0
     ENDIF
 
 ! JT exit conditions:
+   !IF ( ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR. &
+   !(bourdinflag).OR.(testflag).OR.(FREflag).OR.(CMTflag)) &
+   !			    .AND.((R(1).GE.xe(2)).OR.(R(1).LE.xe(1)) &	! beyond simulation range
+   ! 			      .OR.(R(2).GE.ye(2)).OR.(R(2).LE.ye(1)) &
+   !			      .OR.(R(3).GE.ze(2)).OR.(R(3).LE.ze(1)))) THEN
+   ! print *, 'box extent exit'
+   ! IF (JTo4) write(49,*), 'B'
+   ! DO I = 1,3
+   !   RSTART(I)=R(I)
+   ! ENDDO
+   ! T2 = T
+   ! USTART = U
+   ! GAMMASTART = GAMMA
+   ! RETURN
+   !ENDIF
+   
+   
    IF ( ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR. &
    (bourdinflag).OR.(testflag).OR.(FREflag).OR.(CMTflag)) &
-   			    .AND.((R(1).GE.xe(2)).OR.(R(1).LE.xe(1)) &	! beyond simulation range
-    			      .OR.(R(2).GE.ye(2)).OR.(R(2).LE.ye(1)) &
-			      .OR.(R(3).GE.ze(2)).OR.(R(3).LE.ze(1)))) THEN
-    print *, 'box extent exit'
+   			    .AND.(R(3).GE.ze(2)).OR.(R(3).LE.ze(1))) THEN
+    !print *, ' z bounds encountered'
+    IF (zbc_transparent) THEN
+      print *, 'box extent exit'
+      IF (JTo4) write(49,*), 'B'
+      DO I = 1,3
+        RSTART(I)=R(I)
+      ENDDO
+      T2 = T
+      USTART = U
+      GAMMASTART = GAMMA
+      RETURN
+    ENDIF
+    IF (zbc_part_reflective) THEN
+      IF (sqrt(MU*sqrt(dot(B,B))/gamma/gamma)/sqrt(U*U/gamma/gamma).ge.0.02) THEN
+       !print *, 'bounce'
+       U=-U 
+      ELSE
+       print *, 'box extent exit'
+       print *, sqrt(MU*sqrt(dot(B,B))/gamma/gamma)/sqrt(U*U/gamma/gamma)
+       IF (JTo4) write(49,*), 'B'
+       DO I = 1,3
+        RSTART(I)=R(I)
+       ENDDO
+       T2 = T
+       USTART = U
+       GAMMASTART = GAMMA
+       RETURN
+      ENDIF 
+    ENDIF
+    IF (zbc_full_reflective) THEN
+      U=-U
+      !print *, 'bounce'
+    ENDIF  
+   ENDIF
+   IF ( ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR. &
+   (bourdinflag).OR.(testflag).OR.(FREflag).OR.(CMTflag)) &
+   			    .AND.((R(1).GE.xe(2)).OR.(R(1).LE.xe(1))) &
+   			    .OR.((R(2).GE.ye(2)).OR.(R(2).LE.ye(1)))) THEN
+   ! print *, ' side box extent exit'
     IF (JTo4) write(49,*), 'B'
     DO I = 1,3
       RSTART(I)=R(I)
@@ -339,7 +392,25 @@ UNDERFLOW=0
     USTART = U
     GAMMASTART = GAMMA
     RETURN
-   ENDIF
+   ENDIF   
+   
+ 
+   
+   !IF ( ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR. &
+   !(bourdinflag).OR.(testflag).OR.(FREflag).OR.(CMTflag)) &
+   !			    .AND.((R(1).GE.xe(2)).OR.(R(1).LE.xe(1)))
+   !			    .OR.((R(2).GE.ye(2)).OR.(R(2).LE.ye(1)))) THEN
+   ! print *, ' side box extent exit'
+   ! IF (JTo4) write(49,*), 'B'
+   ! DO I = 1,3
+   !   RSTART(I)=R(I)
+   ! ENDDO
+   ! T2 = T
+   ! USTART = U
+   ! GAMMASTART = GAMMA
+   ! RETURN
+   !ENDIF
+   
    IF ((abs(H).lt.EPS).AND.(abs(HNEXT).lt.EPS)) THEN ! both this and the next step are unbelievably small so quit before we get stuck!
     print *, 'timestep shrink'
     IF (JTo4) write(49,*), 'H'

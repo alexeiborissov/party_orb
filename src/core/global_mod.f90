@@ -10,10 +10,10 @@ MODULE global
  SAVE 
   
 !########################################################################## 
- CHARACTER(Len = 4), PARAMETER	:: FMOD='fre' ! SWITCH BETWEEN FIELDS: "l3d","l2d", "SEP","CMT","test", or "bor"
- INTEGER, PARAMETER		:: mysnap=0001	!  no. of ****.cfd/****.sdf file (if "l3d")
- INTEGER, PARAMETER		:: nframes=2	! no. of frames
- CHARACTER(Len = 40)		:: sloc='../../lare2d_runs/l2d_uniformfield/Data/'
+ CHARACTER(Len = 4), PARAMETER	:: FMOD='l3d' ! SWITCH BETWEEN FIELDS: "l3d","l2d", "SEP","CMT","test", or "bor"
+ INTEGER, PARAMETER		:: mysnap=0000	!  no. of ****.cfd/****.sdf file (if "l3d")
+ INTEGER, PARAMETER		:: nframes=5	! no. of frames
+ CHARACTER(Len = 40)		:: sloc='../../laredata/twoloopsunstable/'
 
 !##########################################################################
 ! now some stuff required to plug in lare data 
@@ -27,27 +27,31 @@ MODULE global
  INTEGER 			:: frame 
  
 !JT DEBUGGING SWITCHES:
- LOGICAL, PARAMETER		:: writervs=.TRUE.					! ARE WE WRITING? (ALWAYS TRUE!) 
+ LOGICAL, PARAMETER		:: writervs=.TRUE., writesum=.TRUE.			! ARE WE WRITING? (ALWAYS TRUE!) 
  LOGICAL, PARAMETER		:: JTo=.TRUE., JTo2=.FALSE., JTo3=.FALSE., JTO4=.TRUE.	! various debugging switches (2&3 output every NSTP)
  LOGICAL, PARAMETER		:: FIELDDUMP=.FALSE.					! switch to dump the lare fields to unformatted data files.
  LOGICAL, PARAMETER		:: everystepswitch=.FALSE.				! dumps EVERY NSTP to each particle data file.
  
 !PARTICLE quantities: 								
- REAL(num), DIMENSION(3) 	:: R1,R2, tempr
+
  REAL(num) 			:: time, tempa, tempe
  REAL(num) 			:: Ekin,Alpha,AlphaMax,AlphaMin,dalpha, Ekinlow,Ekinhigh,T1Keep,T2Keep
- REAL(num) 			:: T1,T2, H1,EPS, USTART, mu, USTARTKEEP, GAMMASTART,GAMMASTARTKEEP, VPARSTART
+ REAL(num) 			:: T1,T2, H1,EPS, USTART, mu, USTARTKEEP, GAMMASTART,GAMMASTARTKEEP, VPARSTART, VPARSTARTKEEP
+ REAL(num), DIMENSION(3) 	:: RSTART, RSTARTKEEP
+ REAL(num), DIMENSION(3) 	:: R1,R2, tempr
  INTEGER, DIMENSION(3) 		:: RSteps 
  INTEGER			:: pn, nparticles
  INTEGER			:: p_restart_no, p_stop_no
  INTEGER 			:: EKinSteps, AlphaSteps
  LOGICAL			:: p_restart=.FALSE., p_stop=.FALSE. 		! are we starting or stopping midway through the arrays?
- LOGICAL			:: RANDOMISE_R, RANDOMISE_A, RANDOMISE_E	! switches for randomising position, angle and energy (TWO WORK CURRENTLY!)
+ LOGICAL			:: RANDOMISE_R, RANDOMISE_A, RANDOMISE_E	! switches for randomising position, angle and energy
+
+ LOGICAL, PARAMETER		:: zbc_transparent=.FALSE., zbc_part_reflective=.TRUE., zbc_full_reflective=.FALSE. 
 
  LOGICAL		:: maxwellEfirst
  REAL(num), PARAMETER	:: maxwellpeaktemp= 1e6_num
  ! Local parameters
- REAL (num), PARAMETER  	:: one = 1.0_num, zero = 0.0_num
+ REAL (num), PARAMETER  :: one = 1.0_num, zero = 0.0_num
  
 ! CONSTANTS
  REAL(num), PARAMETER	:: pi = 3.1415926535897932_num
@@ -62,12 +66,12 @@ MODULE global
  REAL(num), PARAMETER	:: oneotwelve=1.0_num/12.0_num 
 
 ! NORMALISING SCALES 
- REAL(num), PARAMETER	:: Lscl = 1e5_num     		! 10 Mega meters (1e7)
+ REAL(num), PARAMETER	:: Lscl = 1e6_num     		! 10 Mega meters (1e7)
  REAL(num), PARAMETER	:: Bscl = 0.001_num		! 100 Gauss 	 (0.01)
  !REAL(num), PARAMETER	:: Bscl = 1.0_num 		! 100 Gauss 	 (0.01)
  !REAL(num), PARAMETER	:: Escl = 1e3			! 10V/cm	 (1e3)
  !REAL(num), PARAMETER	:: Tscl = Lscl*Bscl/Escl        ! 100s	
- REAL(num), PARAMETER	:: Tscl = 100.0_num		! 100s	
+ REAL(num), PARAMETER	:: Tscl = 1.0_num		! 100s	
  REAL(num), PARAMETER	:: Escl = Lscl*Bscl/Tscl	! 10V/cm	 (1e3)
  REAL(num), PARAMETER	:: Vscl = Lscl/Tscl		! 10^7/10^2=10^5m/s=100km/s
  REAL(num), PARAMETER	:: Ekscl = M*Vscl*Vscl		! 10^10*9e-31=9e-21joules
@@ -81,6 +85,8 @@ MODULE global
 
  LOGICAL, PARAMETER	:: lare_norm=.TRUE.	! TRUE if Lare output IS NORMALISED, else FALSE (so normalise varibles and derivs).
  						! (usually true, unless someone has messed with control.f90)
+
+ REAL(num), PARAMETER	:: l3dtimenorm=1.0_num 
 
 ! BIRN ET AL NORMALISATION 
  REAL(num), PARAMETER	:: sigma=sqrt(Me/Mp), oneosigma=sqrt(Mp/Me) 				!sigma is small, oneosigma is big. 
@@ -118,9 +124,9 @@ MODULE global
 
  !REAL(num), DIMENSION(2), PARAMETER	:: xe=(/0.1_num,99.9_num/),ye=(/-0.1_num,99.9_num/),ze=(/-19.5_num,79.5_num/)
  !REAL(num), DIMENSION(2), PARAMETER	:: xe=(/-0.9_num,0.9_num/),ye=(/-0.9_num,0.9_num/),ze=(/-100.00_num,100.0_num/)
-  REAL(num), DIMENSION(2), PARAMETER	:: xe=(/-10.0_num,10.0_num/),ye=(/-10.0_num,10.0_num/),ze=(/0.0_num,80.0_num/)
+  REAL(num), DIMENSION(2), PARAMETER	:: ze=(/-9.5_num,9.5_num/),ye=(/-1.8_num,1.8_num/),xe=(/-1.8_num,3.8_num/)
  !REAL(num), PARAMETER			:: eta=0.001_num, jcrit=25.0_num
- REAL(num), PARAMETER			:: eta=0.0_num, jcrit=20.0_num, rwidth=0.05_num
+ REAL(num), PARAMETER			:: eta=0.001_num, jcrit=5.0_num, rwidth=0.05_num, etabkg=0.00_num
  !REAL(num), PARAMETER			:: eta=0.001_num, jcrit=20.0_num, rwidth=0.5_num
 
  CHARACTER(Len = 5), PARAMETER 	:: dloc='Data/'
@@ -129,7 +135,7 @@ MODULE global
  INTEGER, PARAMETER				:: mpireal = MPI_DOUBLE_PRECISION
  !INTEGER, PARAMETER				:: nx_global=64, ny_global=64, nz_global=64		! julie's lare3d cfd config
  !INTEGER, PARAMETER				:: nx_global=120, ny_global=120, nz_global=480		! alan's lare3d sdf config
- INTEGER, PARAMETER				:: nx_global=128, ny_global=128, nz_global=1		! James's lare2d cfd config
+ INTEGER, PARAMETER				:: nx_global=256, ny_global=256, nz_global=512		! alan's lare3d sdf config twoloops
  INTEGER, PARAMETER 				:: data_dir_max_length = 64
  INTEGER 					:: nx, ny, nz	
  INTEGER, DIMENSION(:), ALLOCATABLE		:: dims

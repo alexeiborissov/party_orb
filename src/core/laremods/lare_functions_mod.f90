@@ -21,10 +21,10 @@ FUNCTION stagger_bx(var)
     mnz=size(var,2)
     
     !staggering right
-    stagger_bx(1:mny-1,1:mnz)=1.5_num*(var(1:mny-1,1:mnz)+var(2:mny,1:mnz))
+    stagger_bx(1:mny-1,1:mnz)=0.5_num*(var(1:mny-1,1:mnz)+var(2:mny,1:mnz))
     stagger_bx(mny,1:mnz)=var(mny,1:mnz)
     !staggering up
-    stagger_bx(1:mny,1:mnz-1)=1.5_num*(stagger_bx(1:mny,1:mnz-1)+stagger_bx(1:mny,2:mnz))
+    stagger_bx(1:mny,1:mnz-1)=0.5_num*(stagger_bx(1:mny,1:mnz-1)+stagger_bx(1:mny,2:mnz))
     stagger_bx(1:mny,mnz)=stagger_bx(1:mny,mnz)
        
     RETURN
@@ -116,6 +116,9 @@ FUNCTION linterp3d(dx,dy,dz,f000,f100,f010,f110,f001,f101,f011,f111)
 
     IF((abs(dx).gt.1.0_num).OR.(abs(dy).gt.1.0_num).OR.(abs(dz).gt.1.0_num)) THEN
       PRINT*, 'CRITICAL ERROR: dx, dy or dz is TOO BIG'
+      !print*, abs(dx)
+      !print*, abs(dy)
+      !print*, abs(dz)
       STOP
     ENDIF
 
@@ -163,6 +166,7 @@ FUNCTION linterp1d(dx,f0,f1)
  
     IF(abs(dx).gt.1.0_num) THEN
       PRINT*, 'CRITICAL ERROR: dx is TOO BIG'
+      print*, abs(dx)
       STOP
     ENDIF
   
@@ -177,8 +181,9 @@ FUNCTION T2d(R,T)
    REAL(num), DIMENSION(3), INTENT(IN)		:: R		!actual position
    REAL(num), INTENT(IN)			:: T
    REAL(num), DIMENSION(36)			:: T2d
-   REAL(num)					:: temp,  modj, dgt, odgt
+   REAL(num)					:: temp,  modj
    REAL(num), DIMENSION(2)			:: dg, odg, coffset
+   REAL(num), DIMENSION(:), ALLOCATABLE		:: dgt, odgt
    REAL(num), DIMENSION(:), ALLOCATABLE		:: bxt, byt, bzt,vxt, vyt, vzt, Ext, Eyt, Ezt, jxt, jyt, jzt
    REAL(num), DIMENSION(:), ALLOCATABLE		:: dbxdxt,dbxdyt,dbydxt,dbydyt,dbzdxt,dbzdyt
    REAL(num), DIMENSION(:), ALLOCATABLE		:: dExdxt,dExdyt,dEydxt,dEydyt,dEzdxt,dEzdyt
@@ -222,15 +227,16 @@ FUNCTION T2d(R,T)
 
 ! No guarantee we have more than one frame. IF we have one, this routine doesn't bother interpolating in time
   IF (nframes.gt.1) THEN
-   dgt=ltimes(2)-ltimes(1)
+   ALLOCATE(dgt(nframes-1),odgt(nframes-1))
+   dgt=ltimes(2:nframes)-ltimes(1:nframes-1)
    odgt=1.0_num/dgt
    !print*, ltimes(1), ltimes(0)
    DO jjt=1,nframes
     IF ((T.GE.ltimes(jjt)).AND.((T.LT.ltimes(jjt+1)))) THEN
       l(3)=jjt
       EXIT
-    ELSE
-      PRINT *, 'CANNOT FIND TIME IN LARE TIME RANGE'
+    !ELSE
+    !  PRINT *, 'CANNOT FIND TIME IN LARE TIME RANGE'
     ENDIF
    ENDDO
    rpt=1
@@ -367,7 +373,7 @@ FUNCTION T2d(R,T)
       mjy(ix,iy)=-dmbzdx(ix,iy)!+dmbxdz(ix,iy,iz)
       mjz(ix,iy)=dmbydx(ix,iy)-dmbxdy(ix,iy)
       modj=(mjx(ix,iy)*mjx(ix,iy)+mjy(ix,iy)*mjy(ix,iy)+mjz(ix,iy)*mjz(ix,iy))**0.5_num   
-      meta(ix,iy)=0.5_num*(tanh((modj-jcrit)/rwidth)+1.0_num)*eta          
+      meta(ix,iy)=0.5_num*(tanh((modj-jcrit)/rwidth)+1.0_num)*eta+etabkg          
      END DO
     END DO
 
@@ -522,47 +528,48 @@ FUNCTION T2d(R,T)
 
    IF (nframes.gt.1) THEN
 
-    T2d(1)=linterp1d((T-ltimes(l(3)))*odgt,bxt(1),bxt(2))
-    T2d(2)=linterp1d((T-ltimes(l(3)))*odgt,byt(1),byt(2))
-    T2d(3)=linterp1d((T-ltimes(l(3)))*odgt,bzt(1),bzt(2))
-    T2d(4)=linterp1d((T-ltimes(l(3)))*odgt,vxt(1),vxt(2))
-    T2d(5)=linterp1d((T-ltimes(l(3)))*odgt,vyt(1),vyt(2))
-    T2d(6)=linterp1d((T-ltimes(l(3)))*odgt,vzt(1),vzt(2))
-    T2d(7)=linterp1d((T-ltimes(l(3)))*odgt,Ext(1),Ext(2))
-    T2d(8)=linterp1d((T-ltimes(l(3)))*odgt,Eyt(1),Eyt(2))
-    T2d(9)=linterp1d((T-ltimes(l(3)))*odgt,Ezt(1),Ezt(2))   
-    T2d(10)=linterp1d((T-ltimes(l(3)))*odgt,jxt(1),jxt(2))
-    T2d(11)=linterp1d((T-ltimes(l(3)))*odgt,jyt(1),jyt(2))
-    T2d(12)=linterp1d((T-ltimes(l(3)))*odgt,jzt(1),jzt(2))
-    T2d(13)=linterp1d((T-ltimes(l(3)))*odgt,dbxdxt(1),dbxdxt(2))
-    T2d(14)=linterp1d((T-ltimes(l(3)))*odgt,dbydxt(1),dbydxt(2))
-    T2d(15)=linterp1d((T-ltimes(l(3)))*odgt,dbzdxt(1),dbzdxt(2))
-    T2d(16)=linterp1d((T-ltimes(l(3)))*odgt,dbxdyt(1),dbxdyt(2))
-    T2d(17)=linterp1d((T-ltimes(l(3)))*odgt,dbydyt(1),dbydyt(2))
-    T2d(18)=linterp1d((T-ltimes(l(3)))*odgt,dbzdyt(1),dbzdyt(2))
+    T2d(1)=linterp1d((T-ltimes(l(3)))*odgt(l(3)),bxt(1),bxt(2))
+    T2d(2)=linterp1d((T-ltimes(l(3)))*odgt(l(3)),byt(1),byt(2))
+    T2d(3)=linterp1d((T-ltimes(l(3)))*odgt(l(3)),bzt(1),bzt(2))
+    T2d(4)=linterp1d((T-ltimes(l(3)))*odgt(l(3)),vxt(1),vxt(2))
+    T2d(5)=linterp1d((T-ltimes(l(3)))*odgt(l(3)),vyt(1),vyt(2))
+    T2d(6)=linterp1d((T-ltimes(l(3)))*odgt(l(3)),vzt(1),vzt(2))
+    T2d(7)=linterp1d((T-ltimes(l(3)))*odgt(l(3)),Ext(1),Ext(2))
+    T2d(8)=linterp1d((T-ltimes(l(3)))*odgt(l(3)),Eyt(1),Eyt(2))
+    T2d(9)=linterp1d((T-ltimes(l(3)))*odgt(l(3)),Ezt(1),Ezt(2))   
+    T2d(10)=linterp1d((T-ltimes(l(3)))*odgt(l(3)),jxt(1),jxt(2))
+    T2d(11)=linterp1d((T-ltimes(l(3)))*odgt(l(3)),jyt(1),jyt(2))
+    T2d(12)=linterp1d((T-ltimes(l(3)))*odgt(l(3)),jzt(1),jzt(2))
+    T2d(13)=linterp1d((T-ltimes(l(3)))*odgt(l(3)),dbxdxt(1),dbxdxt(2))
+    T2d(14)=linterp1d((T-ltimes(l(3)))*odgt(l(3)),dbydxt(1),dbydxt(2))
+    T2d(15)=linterp1d((T-ltimes(l(3)))*odgt(l(3)),dbzdxt(1),dbzdxt(2))
+    T2d(16)=linterp1d((T-ltimes(l(3)))*odgt(l(3)),dbxdyt(1),dbxdyt(2))
+    T2d(17)=linterp1d((T-ltimes(l(3)))*odgt(l(3)),dbydyt(1),dbydyt(2))
+    T2d(18)=linterp1d((T-ltimes(l(3)))*odgt(l(3)),dbzdyt(1),dbzdyt(2))
     T2d(19)=0.0_num		! Z derivs explicitly set to zero in 2d case
     T2d(20)=0.0_num
     T2d(21)=0.0_num
-    T2d(22)=linterp1d((T-ltimes(l(3)))*odgt,dExdxt(1),dExdxt(2))
-    T2d(23)=linterp1d((T-ltimes(l(3)))*odgt,dEydxt(1),dEydxt(2))
-    T2d(24)=linterp1d((T-ltimes(l(3)))*odgt,dEzdxt(1),dEzdxt(2))
-    T2d(25)=linterp1d((T-ltimes(l(3)))*odgt,dExdyt(1),dExdyt(2))
-    T2d(26)=linterp1d((T-ltimes(l(3)))*odgt,dEydyt(1),dEydyt(2))
-    T2d(27)=linterp1d((T-ltimes(l(3)))*odgt,dEzdyt(1),dEzdyt(2))
+    T2d(22)=linterp1d((T-ltimes(l(3)))*odgt(l(3)),dExdxt(1),dExdxt(2))
+    T2d(23)=linterp1d((T-ltimes(l(3)))*odgt(l(3)),dEydxt(1),dEydxt(2))
+    T2d(24)=linterp1d((T-ltimes(l(3)))*odgt(l(3)),dEzdxt(1),dEzdxt(2))
+    T2d(25)=linterp1d((T-ltimes(l(3)))*odgt(l(3)),dExdyt(1),dExdyt(2))
+    T2d(26)=linterp1d((T-ltimes(l(3)))*odgt(l(3)),dEydyt(1),dEydyt(2))
+    T2d(27)=linterp1d((T-ltimes(l(3)))*odgt(l(3)),dEzdyt(1),dEzdyt(2))
     T2d(28)=0.0_num
     T2d(29)=0.0_num
     T2d(30)=0.0_num
-    T2d(31)=(bxt(2)-bxt(1))*odgt
-    T2d(32)=(byt(2)-byt(1))*odgt
-    T2d(33)=(bzt(2)-bzt(1))*odgt
-    T2d(34)=(Ext(2)-Ext(1))*odgt	! as we have multiple snapshots, we can calculate time derivs finally!
-    T2d(35)=(Eyt(2)-Eyt(1))*odgt
-    T2d(36)=(Ezt(2)-Ezt(1))*odgt
+    T2d(31)=(bxt(2)-bxt(1))*odgt(l(3))
+    T2d(32)=(byt(2)-byt(1))*odgt(l(3))
+    T2d(33)=(bzt(2)-bzt(1))*odgt(l(3))
+    T2d(34)=(Ext(2)-Ext(1))*odgt(l(3))	! as we have multiple snapshots, we can calculate time derivs finally!
+    T2d(35)=(Eyt(2)-Eyt(1))*odgt(l(3))
+    T2d(36)=(Ezt(2)-Ezt(1))*odgt(l(3))
 
 
     DEALLOCATE(bxt, byt, bzt,vxt, vyt, vzt, Ext, Eyt, Ezt, jxt, jyt, jzt)
     DEALLOCATE(dbxdxt,dbxdyt,dbydxt,dbydyt,dbzdxt,dbzdyt)
     DEALLOCATE(dExdxt,dExdyt,dEydxt,dEydyt,dEzdxt,dEzdyt)
+    DEALLOCATE(dgt,odgt)
 
    ELSE
    
@@ -613,8 +620,9 @@ FUNCTION T3d(R,T)
    REAL(num), DIMENSION(3), INTENT(IN)		:: R		!actual position
    REAL(num), INTENT(IN)			:: T
    REAL(num), DIMENSION(36)			:: T3d
-   REAL(num)					:: temp,  modj, dgt, odgt
+   REAL(num)					:: temp,  modj 
    REAL(num), DIMENSION(3)			:: dg, odg, coffset
+   REAL(num), DIMENSION(:), ALLOCATABLE		:: dgt, odgt
    REAL(num), DIMENSION(:), ALLOCATABLE		:: bxt, byt, bzt,vxt, vyt, vzt, Ext, Eyt, Ezt, jxt, jyt, jzt
    REAL(num), DIMENSION(:), ALLOCATABLE		:: dbxdxt,dbxdyt,dbxdzt,dbydxt,dbydyt,dbydzt,dbzdxt,dbzdyt,dbzdzt
    REAL(num), DIMENSION(:), ALLOCATABLE		:: dExdxt,dExdyt,dExdzt,dEydxt,dEydyt,dEydzt,dEzdxt,dEzdyt,dEzdzt
@@ -626,13 +634,12 @@ FUNCTION T3d(R,T)
    INTEGER					:: jjx, jjy, jjz,jjt, rpt
    LOGICAL					:: fxflag=.FALSE., fyflag=.FALSE., fzflag=.FALSE.
  
-      temp=0.0_num
-    dg=(/myx(2)-myx(1),myy(2)-myy(1),myz(2)-myz(1)/)	! grid spacing
-    odg=(/1.0_num/dg(1),1.0_num/dg(2),1.0_num/dg(3)/)	! one over grid spacing
-    l=(/-nx,-ny,-nz,-nframes/)					! initial value of l, set to silly value (as >=0 triggers flag)   
+   temp=0.0_num
+   dg=(/myx(2)-myx(1),myy(2)-myy(1),myz(2)-myz(1)/)	! grid spacing
+   odg=(/1.0_num/dg(1),1.0_num/dg(2),1.0_num/dg(3)/)	! one over grid spacing
+   l=(/-nx,-ny,-nz,-nframes/)					! initial value of l, set to silly value (as >=0 triggers flag)   
     
-    
-       
+          
   ! --STEP ONE-- !
   ! first, locate the (x,y,z) position on the grid
   ! particle found between (jjx,jjy,jjz) and (jjx+1,jjy+1,jjz+1)   
@@ -660,14 +667,17 @@ FUNCTION T3d(R,T)
 
 ! No guarantee we have more than one frame. IF we have one, this routine doesn't bother interpolating in time
   IF (nframes.gt.1) THEN
-   dgt=ltimes(2)-ltimes(1)
+  
+   ALLOCATE(dgt(nframes-1),odgt(nframes-1))
+   dgt=ltimes(2:nframes)-ltimes(1:nframes-1)
    odgt=1.0_num/dgt
    DO jjt=1,nframes
     IF ((T.GE.ltimes(jjt)).AND.((T.LT.ltimes(jjt+1)))) THEN
-      l(4)=jjt
+      l(4)=jjt 
+      !print*, (T-ltimes(l(4)))*odgt(l(4))
       EXIT
-    ELSE
-      PRINT *, 'CANNOT FIND TIME IN LARE TIME RANGE'
+    !ELSE
+    !  PRINT *, 'CANNOT FIND TIME IN LARE TIME RANGE'
     ENDIF
    ENDDO
    rpt=1
@@ -751,6 +761,7 @@ FUNCTION T3d(R,T)
    !mbx=bx(l(1)-2:l(1)+3,l(2)-2:l(2)+3,l(3)-2:l(3)+3)
    !mby=by(l(1)-2:l(1)+3,l(2)-2:l(2)+3,l(3)-2:l(3)+3)
    !mbz=bz(l(1)-2:l(1)+3,l(2)-2:l(2)+3,l(3)-2:l(3)+3)
+   !print*, l(1), l(2), l(3)
    mbx=bx(l(1)-4:l(1)+5,l(2)-4:l(2)+5,l(3)-4:l(3)+5,l(4)+it)
    mby=by(l(1)-4:l(1)+5,l(2)-4:l(2)+5,l(3)-4:l(3)+5,l(4)+it)
    mbz=bz(l(1)-4:l(1)+5,l(2)-4:l(2)+5,l(3)-4:l(3)+5,l(4)+it)
@@ -887,7 +898,7 @@ FUNCTION T3d(R,T)
       !ELSE
       ! meta(ix,iy,iz)=0.0_num
       !ENDIF
-      meta(ix,iy,iz)=0.5_num*(tanh((modj-jcrit)/rwidth)+1.0_num)*eta          
+      meta(ix,iy,iz)=0.5_num*(tanh((modj-jcrit)/rwidth)+1.0_num)*eta+etabkg          
      END DO
     END DO
    END DO
@@ -1192,48 +1203,48 @@ FUNCTION T3d(R,T)
 
    IF (nframes.gt.1) THEN
 
-    T3d(1)=linterp1d((T-ltimes(l(4)))*odgt,bxt(1),bxt(2))
-    T3d(2)=linterp1d((T-ltimes(l(4)))*odgt,byt(1),byt(2))
-    T3d(3)=linterp1d((T-ltimes(l(4)))*odgt,bzt(1),bzt(2))
-    T3d(4)=linterp1d((T-ltimes(l(4)))*odgt,vxt(1),vxt(2))
-    T3d(5)=linterp1d((T-ltimes(l(4)))*odgt,vyt(1),vyt(2))
-    T3d(6)=linterp1d((T-ltimes(l(4)))*odgt,vzt(1),vzt(2))
-    T3d(7)=linterp1d((T-ltimes(l(4)))*odgt,Ext(1),Ext(2))
-    T3d(8)=linterp1d((T-ltimes(l(4)))*odgt,Eyt(1),Eyt(2))
-    T3d(9)=linterp1d((T-ltimes(l(4)))*odgt,Ezt(1),Ezt(2))   
-    T3d(10)=linterp1d((T-ltimes(l(4)))*odgt,jxt(1),jxt(2))
-    T3d(11)=linterp1d((T-ltimes(l(4)))*odgt,jyt(1),jyt(2))
-    T3d(12)=linterp1d((T-ltimes(l(4)))*odgt,jzt(1),jzt(2))
-    T3d(13)=linterp1d((T-ltimes(l(4)))*odgt,dbxdxt(1),dbxdxt(2))
-    T3d(14)=linterp1d((T-ltimes(l(4)))*odgt,dbydxt(1),dbydxt(2))
-    T3d(15)=linterp1d((T-ltimes(l(4)))*odgt,dbzdxt(1),dbzdxt(2))
-    T3d(16)=linterp1d((T-ltimes(l(4)))*odgt,dbxdyt(1),dbxdyt(2))
-    T3d(17)=linterp1d((T-ltimes(l(4)))*odgt,dbydyt(1),dbydyt(2))
-    T3d(18)=linterp1d((T-ltimes(l(4)))*odgt,dbzdyt(1),dbzdyt(2))
-    T3d(19)=linterp1d((T-ltimes(l(4)))*odgt,dbxdzt(1),dbxdzt(2))
-    T3d(20)=linterp1d((T-ltimes(l(4)))*odgt,dbydzt(1),dbydzt(2))
-    T3d(21)=linterp1d((T-ltimes(l(4)))*odgt,dbzdzt(1),dbzdzt(2))
-    T3d(22)=linterp1d((T-ltimes(l(4)))*odgt,dExdxt(1),dExdxt(2))
-    T3d(23)=linterp1d((T-ltimes(l(4)))*odgt,dEydxt(1),dEydxt(2))
-    T3d(24)=linterp1d((T-ltimes(l(4)))*odgt,dEzdxt(1),dEzdxt(2))
-    T3d(25)=linterp1d((T-ltimes(l(4)))*odgt,dExdyt(1),dExdyt(2))
-    T3d(26)=linterp1d((T-ltimes(l(4)))*odgt,dEydyt(1),dEydyt(2))
-    T3d(27)=linterp1d((T-ltimes(l(4)))*odgt,dEzdyt(1),dEzdyt(2))
-    T3d(28)=linterp1d((T-ltimes(l(4)))*odgt,dExdzt(1),dExdzt(2))
-    T3d(29)=linterp1d((T-ltimes(l(4)))*odgt,dEydzt(1),dEydzt(2))
-    T3d(30)=linterp1d((T-ltimes(l(4)))*odgt,dEzdzt(1),dEzdzt(2))
-    T3d(31)=(bxt(2)-bxt(1))*odgt
-    T3d(32)=(byt(2)-byt(1))*odgt
-    T3d(33)=(bzt(2)-bzt(1))*odgt
-    T3d(34)=(Ext(2)-Ext(1))*odgt	! as we have multiple snapshots, we can calculate time derivs finally!
-    T3d(35)=(Eyt(2)-Eyt(1))*odgt
-    T3d(36)=(Ezt(2)-Ezt(1))*odgt
+    T3d(1)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),bxt(1),bxt(2))
+    T3d(2)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),byt(1),byt(2))  
+    T3d(3)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),bzt(1),bzt(2))
+    T3d(4)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),vxt(1),vxt(2))
+    T3d(5)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),vyt(1),vyt(2))
+    T3d(6)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),vzt(1),vzt(2))
+    T3d(7)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),Ext(1),Ext(2))
+    T3d(8)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),Eyt(1),Eyt(2))
+    T3d(9)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),Ezt(1),Ezt(2))   
+    T3d(10)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),jxt(1),jxt(2))
+    T3d(11)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),jyt(1),jyt(2))
+    T3d(12)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),jzt(1),jzt(2))
+    T3d(13)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbxdxt(1),dbxdxt(2))
+    T3d(14)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbydxt(1),dbydxt(2))
+    T3d(15)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbzdxt(1),dbzdxt(2))
+    T3d(16)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbxdyt(1),dbxdyt(2))
+    T3d(17)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbydyt(1),dbydyt(2))
+    T3d(18)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbzdyt(1),dbzdyt(2))
+    T3d(19)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbxdzt(1),dbxdzt(2))
+    T3d(20)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbydzt(1),dbydzt(2))
+    T3d(21)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbzdzt(1),dbzdzt(2))
+    T3d(22)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dExdxt(1),dExdxt(2))
+    T3d(23)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dEydxt(1),dEydxt(2))
+    T3d(24)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dEzdxt(1),dEzdxt(2))
+    T3d(25)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dExdyt(1),dExdyt(2))
+    T3d(26)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dEydyt(1),dEydyt(2))
+    T3d(27)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dEzdyt(1),dEzdyt(2))
+    T3d(28)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dExdzt(1),dExdzt(2))
+    T3d(29)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dEydzt(1),dEydzt(2))
+    T3d(30)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dEzdzt(1),dEzdzt(2))
+    T3d(31)=(bxt(2)-bxt(1))*odgt(l(4))
+    T3d(32)=(byt(2)-byt(1))*odgt(l(4))
+    T3d(33)=(bzt(2)-bzt(1))*odgt(l(4))
+    T3d(34)=(Ext(2)-Ext(1))*odgt(l(4))	! as we have multiple snapshots, we can calculate time derivs finally!
+    T3d(35)=(Eyt(2)-Eyt(1))*odgt(l(4))
+    T3d(36)=(Ezt(2)-Ezt(1))*odgt(l(4))
 
 
     DEALLOCATE(bxt, byt, bzt,vxt, vyt, vzt, Ext, Eyt, Ezt, jxt, jyt, jzt)
     DEALLOCATE(dbxdxt,dbxdyt,dbxdzt,dbydxt,dbydyt,dbydzt,dbzdxt,dbzdyt,dbzdzt)
     DEALLOCATE(dExdxt,dExdyt,dExdzt,dEydxt,dEydyt,dEydzt,dEzdxt,dEzdyt,dEzdzt)
-
+    DEALLOCATE(dgt,odgt)
    ELSE
    
     T3d(1)=bxt(1)

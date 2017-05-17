@@ -15,15 +15,19 @@ IMPLICIT NONE
  INTEGER :: NOK, NBAD
  INTEGER :: NKEEP,time_no
  INTEGER :: pos_no_x,pos_no_y,pos_no_z,pos_no_alpha,pos_no_ekin
- INTEGER :: pnmax
+ INTEGER :: pnmax, fcount
  INTEGER, DIMENSION(3) :: pos_no_r
  
+ LOGICAL :: file_exists
+ 
  REAL(num), DIMENSION(3) :: gds, lbox
- REAL(num), DIMENSION(3) :: RSTART,RSTARTKEEP!, R1,R2
+ !REAL(num), DIMENSION(3) :: RSTART,RSTARTKEEP!, R1,R2
  REAL(num), DIMENSION(NKEEPMAX) :: TT 
  REAL(num), DIMENSION(NKEEPMAX,3) :: S, TOTAL
- REAL(num), DIMENSION(3) :: Et,Bt,DBDXt,DBDYt,DBDZt,DBDTt,DEDXt,DEDYt,DEDZt,DEDTt,Vft
- CHARACTER(LEN=35)	 :: finfile
+ !REAL(num), DIMENSION(3) :: Et,Bt,DBDXt,DBDYt,DBDZt,DBDTt,DEDXt,DEDYt,DEDZt,DEDTt,Vft
+ REAL(num)		 :: e1t, e2t, e3t
+ REAL(num), DIMENSION(3) :: Bt,Et,dum2,dum3,dum4,dum5,dum6,dum7,dum8,dum9,dum10,UEt
+ CHARACTER(LEN=35)	 :: finfile, sumname
 
 
 ! CALL MPI_INIT(errcode)		! mpi initialise
@@ -45,6 +49,7 @@ IMPLICIT NONE
    l3dflag=.TRUE.
    CALL MPI_INIT(errcode)
    CALL mpi_initialise      ! mpi_routines.f90
+   ltimes=ltimes*l3dtimenorm
    IF (((nframes.GT.1)).AND.((T1/tscl.lt.ltimes(0)).OR.(T2/tscl.gt.ltimes(nframes-1)))) THEN
     PRINT*, 'FATAL ERROR!' 
     PRINT*, '(normalised) start/end times of particle range go beyond Lare grid of times'
@@ -154,6 +159,19 @@ IMPLICIT NONE
    pnmax=nparticles
   ENDIF
 
+  IF (writesum) THEN
+   WRITE(sumname,"(A,'Nsum',i1'.dat')"),dlocR, fcount
+   inquire(file=sumname, exist=file_exists)
+   DO WHILE (file_exists)
+    print*, 'summary file called', sumname, 'encountered! moving up one..'
+    fcount=fcount+1
+    WRITE(sumname,"(A,'Nsum',i1'.dat')"),dlocR, fcount
+    inquire(file=sumname, exist=file_exists)
+   ENDDO
+   print*, 'dumping start and end times, positions and energies to', sumname
+   open(38,file=sumname,recl=1024,status='unknown')
+  ENDIF
+
   maxwellEfirst=.TRUE.
   DO WHILE (pos_no_x .LE. RSTEPS(1)-1)
    DO WHILE (pos_no_y .LE. RSTEPS(2)-1)
@@ -208,7 +226,6 @@ IMPLICIT NONE
    !alpha = pi/(no of steps+1) if fullangle is 1 (ie, steps from >=0 to >Pi (but not including Pi))
    !alpha = pi/2/(no of steps) if fullangle is 0 (steps from 0 to Pi/2 inclusive)
   
-       !VPARSTARTKEEP=VPARSTART
        RSTARTKEEP=RSTART
        !PRINT*,'Normalising:'
        RSTART=RSTART/Lscl
@@ -224,14 +241,24 @@ IMPLICIT NONE
        
        !call sub to calculate mu from Ekinetic (initial), vpar (to get Epar),
        !initial position and initial time.
-       CALL CALC2_MU(MU,vparstart,Ekin,Alpha,RSTART,T1,T2)		! calculates vparstart
-       
+       CALL CALC2_MU(MU,VPARSTART,Ekin,Alpha,RSTART,T1,T2)		! calculates vparstart
        
        Ekin = Ekin*AQ/Ekscl !convert energy from ev to joules (inc. in non-rel)
+       VPARSTARTKEEP=VPARSTART
        
        !Call the rk sophisticated driver, which then works out the arrays for the
        !time steps and positions.
        CALL RKDRIVE(RSTART,VPARSTART,MU,T1,T2,EPS,H1,NOK,NBAD,TT,S,TOTAL)
+
+       ! work out final energy
+       CALL FIELDS(RSTART,T1,Et,Bt,dum2,dum3,dum4,dum5,dum6,dum7,dum8,dum9,dum10,T1,T2)
+       e1t=oneuponAQ*0.5_num*M*Vscl*VPARSTART*Vscl*VPARSTART
+       e2t=oneuponAQ*M*Vscl*Vscl*MU*sqrt(dot(Bt,Bt))
+       UEt=Vscl*cross(Et,Bt)/dot(Bt,Bt)
+       e3t=oneuponAQ*0.5_num*M*dot(UEt,UEt)*Vscl*Vscl
+
+       IF (writesum) write(38,*) Tscl*(T1), Lscl*RSTARTKEEP, Ekin*Ekscl, &
+       Tscl*(T2), Lscl*RSTART, e1t+e2t+e3t
 
        NKEEP = (NOK +NBAD)/NSTORE
 
@@ -247,6 +274,7 @@ IMPLICIT NONE
    pos_no_x=pos_no_x+1
    pos_no_y=0
   END DO
+  IF (writesum) CLOSE(38)
   IF (JTo4) CLOSE(48)
  
  

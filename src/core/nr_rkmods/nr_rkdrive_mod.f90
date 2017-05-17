@@ -273,11 +273,55 @@ UNDERFLOW=0
       RETURN                            !normal exit
     ENDIF
 
-   IF (((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR.(bourdinflag)) &
-   			    .AND.((R(1).GE.xe(2)).OR.(R(1).LE.xe(1)) &	! beyond simulation range
-    			      .OR.(R(2).GE.ye(2)).OR.(R(2).LE.ye(1)) &
-			      .OR.(R(3).GE.ze(2)).OR.(R(3).LE.ze(1)))) THEN
-    print *, 'box extent exit'
+   !IF (((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR.(bourdinflag)) &
+   !			    .AND.((R(1).GE.xe(2)).OR.(R(1).LE.xe(1)) &	! beyond simulation range
+   ! 			      .OR.(R(2).GE.ye(2)).OR.(R(2).LE.ye(1)) &
+!			      .OR.(R(3).GE.ze(2)).OR.(R(3).LE.ze(1)))) THEN
+!    print *, 'box extent exit'
+!    IF (JTo4) write(49,*), 'B'
+!    DO I = 1,3
+!      RSTART(I)=R(I)
+!    ENDDO
+!    T2 = T
+!    VPARSTART=VPAR
+!    RETURN
+!   ENDIF
+
+   IF ( ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR. &
+   (bourdinflag).OR.(testflag).OR.(FREflag).OR.(CMTflag)) &
+   			    .AND.(R(3).GE.ze(2)).OR.(R(3).LE.ze(1))) THEN
+    !print *, ' z bounds encountered'
+    IF (zbc_transparent) THEN
+      print *, 'box extent exit'
+      IF (JTo4) write(49,*), 'B'
+      DO I = 1,3
+        RSTART(I)=R(I)
+      ENDDO
+      T2 = T
+      VPARSTART=VPAR
+      RETURN
+    ENDIF
+    IF (zbc_part_reflective) THEN
+      IF (sqrt(sum((DRDT-VPAR*bb)**2))/sqrt(VPAR*VPAR).ge.0.02) THEN
+       VPAR=-VPAR
+      ELSE
+       print *, 'box extent exit'
+       IF (JTo4) write(49,*), 'B'
+       DO I = 1,3
+        RSTART(I)=R(I)
+       ENDDO
+       T2 = T
+       VPARSTART=VPAR
+       RETURN
+      ENDIF 
+    ENDIF
+    IF (zbc_full_reflective) VPAR=-VPAR  
+   ENDIF
+   IF ( ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR. &
+   (bourdinflag).OR.(testflag).OR.(FREflag).OR.(CMTflag)) &
+   			    .AND.((R(1).GE.xe(2)).OR.(R(1).LE.xe(1))) &
+   			    .OR.((R(2).GE.ye(2)).OR.(R(2).LE.ye(1))) ) THEN
+   ! print *, ' side box extent exit'
     IF (JTo4) write(49,*), 'B'
     DO I = 1,3
       RSTART(I)=R(I)
@@ -285,7 +329,8 @@ UNDERFLOW=0
     T2 = T
     VPARSTART=VPAR
     RETURN
-   ENDIF
+   ENDIF   
+   
    IF ((H.lt.EPS).AND.(HNEXT.lt.EPS)) THEN ! both this and the next step are unbelievably small so quit before we get stuck!
     print *, 'timestep shrink'
     IF (JTo4) write(49,*), 'H'

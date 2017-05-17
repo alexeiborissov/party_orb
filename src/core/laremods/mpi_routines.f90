@@ -222,7 +222,7 @@ CONTAINS
    END IF
    IF (se) THEN
     print*, 'found new lare3d file (sdf)'
-    ALLOCATE(local_dims(c_ndims))
+    !ALLOCATE(local_dims(c_ndims))
     local_dims = (/nx, ny, nz/)
     CALL mpi_create_types_3d
     CALL L3DSGRID()
@@ -241,6 +241,8 @@ CONTAINS
   ! if the first file exists, compare lare and particle grids - particle grid must be shorter than lare grid (for obvious reasons). 
   WRITE(*,101)  'checking grid extent: '
   IF (.not. ((maxval(myx).ge.xe(2)).OR.(minval(myx).le.xe(1)))) THEN
+   !print*, maxval(myx), xe(2)
+   !print*, minval(myx), xe(1)
    WRITE(*,*) '..particle start positions beyond specified lare grid range in x'
    gflag=.true.
   ENDIF
@@ -249,8 +251,8 @@ CONTAINS
    gflag=.true.
   ENDIF
   IF (.not. ((maxval(myz).ge.ze(2)).OR.(minval(myz).le.ze(1)))) THEN
-   print*, maxval(myz), ze(2)
-   print*, minval(myz), ze(1)
+   !print*, maxval(myz), ze(2)
+   !print*, minval(myz), ze(1)
    WRITE(*,*) '..particle start positions beyond specified lare grid range in z'
    gflag=.true.
   ENDIF
@@ -282,7 +284,7 @@ CONTAINS
       ENDIF
     ENDIF
     frame=frame+1
-    WRITE (istring,fmt1) mysnap+frame 			
+    WRITE (istring,fmt1) mysnap+frame-1 			
     cfdloc=trim(adjustl(sloc))//trim(istring)//filetype1
     sdfloc=trim(adjustl(sloc))//trim(istring)//filetype2
    END DO

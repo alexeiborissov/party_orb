@@ -15,15 +15,18 @@ IMPLICIT NONE
  INTEGER :: NOK, NBAD
  INTEGER :: NKEEP,time_no
  INTEGER :: pos_no_x,pos_no_y,pos_no_z,pos_no_alpha,pos_no_ekin
- INTEGER :: pnmax
+ INTEGER :: pnmax, fcount
  INTEGER, DIMENSION(3) :: pos_no_r
  
+ LOGICAL :: file_exists
+ 
  REAL(num), DIMENSION(3) :: gds, lbox
- REAL(num), DIMENSION(3) :: RSTART,RSTARTKEEP!, R1,R2
+ !REAL(num), DIMENSION(3) :: RSTART,RSTARTKEEP!, R1,R2
  REAL(num), DIMENSION(NKEEPMAX) :: TT 
  REAL(num), DIMENSION(NKEEPMAX,3) :: S, TOTAL
- REAL(num), DIMENSION(3) :: Et,Bt,DBDXt,DBDYt,DBDZt,DBDTt,DEDXt,DEDYt,DEDZt,DEDTt,Vft
- CHARACTER(LEN=35)	 :: finfile
+ !REAL(num), DIMENSION(3) :: Et,Bt,DBDXt,DBDYt,DBDZt,DBDTt,DEDXt,DEDYt,DEDZt,DEDTt,Vft
+ 
+ CHARACTER(LEN=35)	 :: finfile, sumname
  
  !welcome screen
  WRITE(*,*) "====RELATIVISTIC particle code====="
@@ -43,7 +46,9 @@ IMPLICIT NONE
    l3dflag=.TRUE.
    CALL MPI_INIT(errcode)
    CALL mpi_initialise      ! mpi_routines.f90
-   print*, ltimes
+   
+   ltimes=ltimes*l3dtimenorm
+   print*, 'loaded times:', ltimes
    IF (((nframes.GT.1)).AND.((T1/tscl.lt.ltimes(1)).OR.(T2/tscl.gt.ltimes(nframes)))) THEN
     PRINT*, 'FATAL ERROR!' 
     PRINT*, '(normalised) start/end times of particle range go beyond Lare grid of times'
@@ -94,6 +99,10 @@ IMPLICIT NONE
   ! chose particle range xe/ye/ze -> particles must not start outside this range!
   IF (((R1(1)/lscl).le.xe(1)).OR.((R2(1)/lscl).ge.xe(2)))  THEN
     WRITE(*,*) '..particles not within x extent '
+    print*, R1(1)/lscl
+    print*, xe(1) 
+    print*, R2(1)/lscl
+    print*, xe(2) 
     gflag=.true.
    ENDIF
    IF (((R1(2)/lscl).le.ye(1)).OR.((R2(2)/lscl).ge.ye(2)))  THEN
@@ -141,18 +150,33 @@ IMPLICIT NONE
    pos_no_x = pn / (RSTEPS(2)*RSTEPS(3))  
    pos_no_y = MOD(pn / RSTEPS(3), RSTEPS(2))
    pos_no_z = MOD(pn,RSTEPS(3))
+   fcount=1
   ELSE
    PRINT*, '--starting particle grid from beginning--'   
    pn=0
    pos_no_x=0
    pos_no_y=0
    pos_no_z=0
+   fcount=0
   ENDIF
   
   IF (p_stop) THEN	!p_stop_no is the particle number where we stop calculating
    pnmax=p_stop_no-1
   ELSE			! otherwise iterate to total number of expected particles
    pnmax=nparticles
+  ENDIF
+  
+  IF (writesum) THEN
+   WRITE(sumname,"(A,'Rsum',i1'.dat')"),dlocR, fcount
+   inquire(file=sumname, exist=file_exists)
+   DO WHILE (file_exists)
+    print*, 'summary file called ', sumname, 'encountered! moving up one..'
+    fcount=fcount+1
+    WRITE(sumname,"(A,'Rsum',i1'.dat')"),dlocR, fcount
+    inquire(file=sumname, exist=file_exists)
+   ENDDO
+   print*, 'dumping start and end times, positions and energies to ', sumname
+   open(39,file=sumname,recl=1024,status='unknown')
   ENDIF
 
   maxwellEfirst=.TRUE.
@@ -171,9 +195,9 @@ IMPLICIT NONE
        ELSE
         RSTART   = R1+lbox*(pos_no_r*1.0_num)*gds
        ENDIF
+       RSTARTKEEP=RSTART     !remember where we started
        
        pn= pn + 1
-       
        !call progress(pn,nparticles) ! generate the progress bar.
        
        IF (JTo4) write(49,"(I4)",advance='no'), pn	   
@@ -189,6 +213,7 @@ IMPLICIT NONE
        T1=T1Keep
        T2=T2Keep
 
+       ! calculate pitch angle
        IF (RANDOMISE_A) THEN
         alpha = Alphamin+dalpha*(pos_no_alpha -1)*tempa	!added by S.Oskoui
        ELSE
@@ -196,7 +221,7 @@ IMPLICIT NONE
        ENDIF
        alpha = alpha*Pi/180.0d0				! RADEG: added by S.Oskoui
 
-       
+       ! calculate kinetic energy - needed to define parallel and perp velocity based on alpha
        !pos_no_ekin starts from 0, if started from 1 then (stepekin-1)
        IF (RANDOMISE_E) THEN
         !Ekin=EKinLow+(EKinHigh-EKinLow)*pos_no_ekin/(EkinSteps*1.0d0)*tempe   
@@ -206,13 +231,6 @@ IMPLICIT NONE
        ELSE
         Ekin=EKinLow+(EKinHigh-EKinLow)*pos_no_ekin/(EkinSteps*1.0d0)
        ENDIF
-       !print*, EKIN
-       !alpha = pi/(no of steps+1) if fullangle is 1 (ie, steps from >=0 to >Pi (but not including Pi))
-       !alpha = pi/2/(no of steps) if fullangle is 0 (steps from 0 to Pi/2 inclusive)
-  
-       RSTARTKEEP=RSTART
-       USTARTKEEP=USTART
-       GAMMASTARTKEEP=GAMMASTART
        
        !PRINT*,'Normalising:'
        RSTART=RSTART/Lscl
@@ -222,12 +240,16 @@ IMPLICIT NONE
        
        ! WARNING passing in dimensional Ekin into mu calc
        CALL JTMUcalc(MU,USTART,GAMMASTART,Ekin,Alpha,RSTART,T1,T2)
-              
+       USTARTKEEP=USTART  
+       GAMMASTARTKEEP=GAMMASTART       
        Ekin = Ekin*AQ/Ekscl        
        
        !Call the rk sophisticated driver, which then works out the arrays for the
        !time steps and positions.
        CALL RKDRIVE(RSTART,USTART,GAMMASTART,MU,T1,T2,EPS,H1,NOK,NBAD,TT,S,TOTAL)
+       
+       IF (writesum) write(39,*) Tscl*(T1), Lscl*RSTARTKEEP, oneuponAQ*(GAMMASTARTKEEP-1)*m*c*c, &
+       Tscl*(T2), Lscl*RSTART, oneuponAQ*(GAMMASTART-1)*m*c*c
         
        NKEEP = (NOK +NBAD)/NSTORE
 
@@ -243,6 +265,7 @@ IMPLICIT NONE
    pos_no_x=pos_no_x+1
    pos_no_y=0
   END DO
+  IF (writesum) CLOSE(39)
   IF (JTo4) CLOSE(49)
  !CALL MAKEFILE(time_no)
   
