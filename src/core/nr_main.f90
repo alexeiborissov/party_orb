@@ -295,10 +295,11 @@ IF ((str_cmp(FMOD, "LARE")).OR.(str_cmp(FMOD, "lare"))) THEN	!forget arrays at e
 SUBROUTINE CALC2_MU(mu,vparstart,Ekin,alpha,RSTART,T1,T2)
 
   REAL(num), DIMENSION(3),INTENT(IN) :: RSTART
-  REAL(num), INTENT(IN) :: T1,T2, Ekin, Alpha
+  REAL(num), INTENT(IN) :: T1,T2, Alpha
+  REAL(num), INTENT(INOUT) :: Ekin
   REAL(num), INTENT(OUT) :: mu, vparstart
   REAL(num), DIMENSION(3) :: B,El,a2,a3,a4,a5,a6,a7,a8,a9,a10,ue
-  REAL(num) :: magB,vtot,vperp,Erest
+  REAL(num) :: magB,vtot,vperp,Erest, Etemp
  
  !calculate B, E, V at this point/time:
  CALL FIELDS(RSTART,T1,El,B,a2,a3,a4,a5,a6,a7,a8,a9,a10,T1,T2)
@@ -311,7 +312,14 @@ SUBROUTINE CALC2_MU(mu,vparstart,Ekin,alpha,RSTART,T1,T2)
  ! E X B drift
  ue=cross(El,B)/dot(B,B)  !*0.5
  
- vtot=sqrt(2.d0*Ekin-dot(ue,ue))
+ Etemp=Ekin
+ 
+ !need to check if 1/2mUE^2 is covered by the initial KE
+ IF (Ekin.lt.0.5d0*m*vscl*vscl*dot(ue,ue)*6.242e18) THEN
+  PRINT*, 'WARNING: raising Initial KE to account for local UE drift'
+  Etemp=0.5*m*vscl*vscl*dot(ue,ue)*6.242e18
+ ENDIF
+ vtot=sqrt(2.d0*Ekin-vscl*vscl*dot(ue,ue))
 
  !vtot= sqrt(((2.d0*Ekin)/Erest)*c**2 - dot(ue,ue))   ! Normalised vtot 
 
