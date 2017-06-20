@@ -214,7 +214,9 @@ IMPLICIT NONE
 
        ! calculate pitch angle
        IF (RANDOMISE_A) THEN
-        alpha = Alphamin+dalpha*(pos_no_alpha -1)*tempa	!added by S.Oskoui
+        CALL init_random_seed()
+        CALL RANDOM_NUMBER(tempa)
+        alpha = Alphamin+tempa*(Alphamax-Alphamin)
        ELSE
         alpha = Alphamin+dalpha*(pos_no_alpha -1)	!added by S.Oskoui
        ENDIF
