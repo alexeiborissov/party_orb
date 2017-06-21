@@ -10,7 +10,7 @@ MODULE global
  SAVE 
   
 !########################################################################## 
- CHARACTER(Len = 4), PARAMETER	:: FMOD='l3d' ! SWITCH BETWEEN FIELDS: "l3d","l2d", "SEP","CMT","test", or "bor"
+ CHARACTER(Len = 4), PARAMETER	:: FMOD='test' ! SWITCH BETWEEN FIELDS: "l3d","l2d", "SEP","CMT","test", or "bor"
  INTEGER, PARAMETER		:: mysnap=0000	!  no. of ****.cfd/****.sdf file (if "l3d")
  INTEGER, PARAMETER		:: nframes=5	! no. of frames
  CHARACTER(Len = 40)		:: sloc='../../laredata/twoloopsunstable/'
@@ -27,10 +27,11 @@ MODULE global
  INTEGER 			:: frame 
  
 !JT DEBUGGING SWITCHES:
- LOGICAL, PARAMETER		:: writervs=.TRUE., writesum=.TRUE.			! ARE WE WRITING? (ALWAYS TRUE!) 
+ LOGICAL, PARAMETER		:: writervs=.TRUE.					! ARE WE WRITING? (ALWAYS TRUE!) 
  LOGICAL, PARAMETER		:: JTo=.TRUE., JTo2=.FALSE., JTo3=.FALSE., JTO4=.TRUE.	! various debugging switches (2&3 output every NSTP)
  LOGICAL, PARAMETER		:: FIELDDUMP=.FALSE.					! switch to dump the lare fields to unformatted data files.
  LOGICAL, PARAMETER		:: everystepswitch=.FALSE.				! dumps EVERY NSTP to each particle data file.
+ LOGICAL			:: writesum=.TRUE.					! create summary of initial final energies, positions, etc each time?
  
 !PARTICLE quantities: 								
 
@@ -46,7 +47,7 @@ MODULE global
  LOGICAL			:: p_restart=.FALSE., p_stop=.FALSE. 		! are we starting or stopping midway through the arrays?
  LOGICAL			:: RANDOMISE_R, RANDOMISE_A, RANDOMISE_E	! switches for randomising position, angle and energy
 
- LOGICAL, PARAMETER		:: zbc_transparent=.FALSE., zbc_part_reflective=.TRUE., zbc_full_reflective=.FALSE. 
+ LOGICAL, PARAMETER		:: zbc_transparent=.TRUE., zbc_part_reflective=.FALSE., zbc_full_reflective=.FALSE. 
 
  LOGICAL		:: maxwellEfirst
  REAL(num), PARAMETER	:: maxwellpeaktemp= 1e6_num
@@ -67,11 +68,11 @@ MODULE global
 
 ! NORMALISING SCALES 
  REAL(num), PARAMETER	:: Lscl = 1e6_num     		! 10 Mega meters (1e7)
- REAL(num), PARAMETER	:: Bscl = 0.001_num		! 100 Gauss 	 (0.01)
+ REAL(num), PARAMETER	:: Bscl = 0.01_num		! 100 Gauss 	 (0.01)
  !REAL(num), PARAMETER	:: Bscl = 1.0_num 		! 100 Gauss 	 (0.01)
  !REAL(num), PARAMETER	:: Escl = 1e3			! 10V/cm	 (1e3)
  !REAL(num), PARAMETER	:: Tscl = Lscl*Bscl/Escl        ! 100s	
- REAL(num), PARAMETER	:: Tscl = 1.0_num		! 100s	
+ REAL(num), PARAMETER	:: Tscl = 10.0_num		! 100s	
  REAL(num), PARAMETER	:: Escl = Lscl*Bscl/Tscl	! 10V/cm	 (1e3)
  REAL(num), PARAMETER	:: Vscl = Lscl/Tscl		! 10^7/10^2=10^5m/s=100km/s
  REAL(num), PARAMETER	:: Ekscl = M*Vscl*Vscl		! 10^10*9e-31=9e-21joules
@@ -217,21 +218,37 @@ SUBROUTINE read_param
 
 END SUBROUTINE read_param
 !----------------------------------------------------!
+!SUBROUTINE init_random_seed()
+!
+!      INTEGER :: i, n, clock
+!      INTEGER, DIMENSION(:), ALLOCATABLE :: seed
+!
+!      CALL RANDOM_SEED(size = n)
+!      ALLOCATE(seed(n))
+!
+!      CALL SYSTEM_CLOCK(COUNT=clock)
+!
+!      seed = clock + 37 * (/ (i - 1, i = 1, n) /)
+!      CALL RANDOM_SEED(PUT = seed)
+!
+!      DEALLOCATE(seed)
+!END SUBROUTINE
+!----------------------------------------------------!
 SUBROUTINE init_random_seed()
 
-      INTEGER :: i, n, clock
-      INTEGER, DIMENSION(:), ALLOCATABLE :: seed
+      INTEGER :: i_seed
+      INTEGER, DIMENSION(:), ALLOCATABLE :: a_seed
+      INTEGER, DIMENSION(1:8) 		:: dt_seed
 
-      CALL RANDOM_SEED(size = n)
-      ALLOCATE(seed(n))
+      CALL RANDOM_SEED(size = i_seed)
+      ALLOCATE(a_seed(1:i_seed))
+      CALL RANDOM_SEED(get=a_seed)
+      CALL DATE_AND_TIME(values=dt_seed)
+      a_seed(i_seed)=dt_seed(8); a_seed(1)=dt_seed(8)*dt_seed(7)*dt_seed(6)
+      CALL RANDOM_SEED(put=a_seed)
+      DEALLOCATE(a_seed)
 
-      CALL SYSTEM_CLOCK(COUNT=clock)
-
-      seed = clock + 37 * (/ (i - 1, i = 1, n) /)
-      CALL RANDOM_SEED(PUT = seed)
-
-      DEALLOCATE(seed)
+     
 END SUBROUTINE
 !----------------------------------------------------!
-
 END MODULE global

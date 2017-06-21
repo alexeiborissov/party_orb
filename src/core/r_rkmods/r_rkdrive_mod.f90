@@ -341,6 +341,8 @@ UNDERFLOW=0
    ! RETURN
    !ENDIF
    
+  ! PRINT*, ze(1), R(3), ze(2)
+   
    
    IF ( ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR. &
    (bourdinflag).OR.(testflag).OR.(FREflag).OR.(CMTflag)) &

@@ -1,14 +1,14 @@
 &inputdata
 
 T1=0.5
-T2=20.0
+T2=100.5
 
 H1=0.00001	
 EPS=1.0E-15
 
 AlphaSteps=2
-AlphaMin=45.0
-AlphaMax=45.0
+AlphaMin=0.0
+AlphaMax=180.0
 
 R1(1)=-1.7E6
 R2(1)=3.7E6
@@ -18,9 +18,9 @@ R1(2)=-1.7E6
 R2(2)=1.7E6
 RSTEPS(2)=16
 
-R1(3)=-0.9E7
-R2(3)=0.9E7
-RSTEPS(3)=16
+R1(3)=0.0
+R2(3)=0.0
+RSTEPS(3)=1
 
 EkinLow=2e1
 EkinHigh=2e1
@@ -34,4 +34,4 @@ p_stop_no=00
 
 RANDOMISE_R=.TRUE.
 RANDOMISE_A=.TRUE.
-RANDOMISE_E=.TRUE./
+RANDOMISE_E=.FALSE./

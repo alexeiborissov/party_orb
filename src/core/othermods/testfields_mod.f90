@@ -27,8 +27,8 @@ SUBROUTINE TESTFIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf)
   !full B=Be+B1
  B(1)=0.0_num
  B(2)=0.0_num
- !B(3)=B0
- B(3)=B0*exp(R(1))
+ B(3)=B0
+ !B(3)=B0*exp(R(1))
 
  !print*, T, T1, tau
  
@@ -58,7 +58,8 @@ SUBROUTINE TESTFIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf)
  ! calculate the spatial derivatives of individual components - in this case, only the x derivatives matter, but make sure only the z component is assigned..
  dBedx(1)=0.0_num
  dBedx(2)=0.0_num
- dBedx(3)=b0*exp(R(1))
+ dBedx(3)=0.0_num
+ !dBedx(3)=b0*exp(R(1))
  
  ! not sure quite how to deal with time dependence in here yet. Or normalisation.
  dBdx = dBedx

@@ -16,6 +16,7 @@ IMPLICIT NONE
  INTEGER :: NKEEP,time_no
  INTEGER :: pos_no_x,pos_no_y,pos_no_z,pos_no_alpha,pos_no_ekin
  INTEGER :: pnmax, fcount
+ 
  INTEGER, DIMENSION(3) :: pos_no_r
  
  LOGICAL :: file_exists
@@ -35,6 +36,8 @@ IMPLICIT NONE
  l3dflag=.FALSE.
  l2dflag=.FALSE.
  analyticalflag=.FALSE.
+ testflag=.FALSE.
+ CMTflag=.FALSE.
 
  ! read in input parameters
  CALL read_param
@@ -80,8 +83,10 @@ IMPLICIT NONE
     
   ELSE IF ((str_cmp(FMOD, "CMT")).OR.(str_cmp(FMOD, "cmt"))) THEN
       !CMT  setup?
+   CMTflag=.TRUE.
   ELSE IF ((str_cmp(FMOD, "TEST")).OR.(str_cmp(FMOD, "test"))) THEN
-      !test setup?
+      !test setup?]
+   testflag=.TRUE.
   ELSE IF ((str_cmp(FMOD, "BOR")).OR.(str_cmp(FMOD, "bor"))) THEN
    bourdinflag=.TRUE.
    CALL bour_ini      ! read in data
@@ -170,11 +175,18 @@ IMPLICIT NONE
    WRITE(sumname,"(A,'Rsum',i1'.dat')"),dlocR, fcount
    inquire(file=sumname, exist=file_exists)
    DO WHILE (file_exists)
+    IF (fcount.ge.9) THEN
+      print*, 'MANY summary files encountered! NOT BOTHERING until you CLEAN UP!'
+      writesum=.FALSE.
+      EXIT
+    ENDIF
     print*, 'summary file called ', sumname, 'encountered! moving up one..'
     fcount=fcount+1
     WRITE(sumname,"(A,'Rsum',i1'.dat')"),dlocR, fcount
     inquire(file=sumname, exist=file_exists)
    ENDDO
+  ENDIF
+  IF (writesum) THEN  
    print*, 'dumping start and end times, positions and energies to ', sumname
    open(39,file=sumname,recl=1024,status='unknown')
   ENDIF
@@ -190,13 +202,13 @@ IMPLICIT NONE
        !print*, tempr
        IF (RANDOMISE_R) THEN
         CALL init_random_seed()
-        CALL RANDOM_NUMBER(tempr)
+        CALL RANDOM_NUMBER(tempr)	
         RSTART   = R1+tempr*lbox	!randomise position in bounds set in input
        ELSE
         RSTART   = R1+lbox*(pos_no_r*1.0_num)*gds
        ENDIF
        RSTARTKEEP=RSTART     !remember where we started
-       
+       tempr=0.0d0
        pn= pn + 1
        !call progress(pn,nparticles) ! generate the progress bar.
        
@@ -208,6 +220,7 @@ IMPLICIT NONE
        ! 1000 format ("particle no. ",i3,"/",i3, ", R=(",ES9.2,",",ES9.2,",",ES9.2,")")
        !ENDIF    
 	print 1000, pn,nparticles, RSTART
+
 
        T1=T1Keep
        T2=T2Keep
