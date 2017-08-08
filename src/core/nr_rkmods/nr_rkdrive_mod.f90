@@ -302,8 +302,9 @@ UNDERFLOW=0
       RETURN
     ENDIF
     IF (zbc_part_reflective) THEN
-      IF (sqrt(sum((DRDT-VPAR*bb)**2))/sqrt(VPAR*VPAR).ge.0.02) THEN
+      IF (sqrt(sum((DRDT-VPAR*bb)**2))/sqrt(VPAR*VPAR).ge.tanthetathresh) THEN
        VPAR=-VPAR
+       print *, 'bounce'
       ELSE
        print *, 'box extent exit'
        IF (JTo4) write(49,*), 'B'
@@ -315,7 +316,10 @@ UNDERFLOW=0
        RETURN
       ENDIF 
     ENDIF
-    IF (zbc_full_reflective) VPAR=-VPAR  
+    IF (zbc_full_reflective) THEN
+      VPAR=-VPAR
+      print*, 'bounce'
+    ENDIF  
    ENDIF
    IF ( ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR. &
    (bourdinflag).OR.(testflag).OR.(FREflag).OR.(CMTflag)) &

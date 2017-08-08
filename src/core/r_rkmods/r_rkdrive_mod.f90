@@ -358,12 +358,12 @@ UNDERFLOW=0
       RETURN
     ENDIF
     IF (zbc_part_reflective) THEN
-      IF (sqrt(MU*sqrt(dot(B,B))/gamma/gamma)/sqrt(U*U/gamma/gamma).ge.0.02) THEN
+      IF (sqrt(MU*sqrt(dot(B,B))/gamma/gamma)/sqrt(U*U/gamma/gamma).ge.tanthetathresh) THEN
        !print *, 'bounce'
        U=-U 
       ELSE
        print *, 'box extent exit'
-       print *, sqrt(MU*sqrt(dot(B,B))/gamma/gamma)/sqrt(U*U/gamma/gamma)
+       !print *, sqrt(MU*sqrt(dot(B,B))/gamma/gamma)/sqrt(U*U/gamma/gamma)
        IF (JTo4) write(49,*), 'B'
        DO I = 1,3
         RSTART(I)=R(I)

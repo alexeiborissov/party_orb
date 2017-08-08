@@ -46,7 +46,9 @@ MODULE global
  LOGICAL			:: p_restart=.FALSE., p_stop=.FALSE. 		! are we starting or stopping midway through the arrays?
  LOGICAL			:: RANDOMISE_R, RANDOMISE_A, RANDOMISE_E	! switches for randomising position, angle and energy
 
- LOGICAL, PARAMETER		:: zbc_transparent=.FALSE., zbc_part_reflective=.TRUE., zbc_full_reflective=.FALSE. 
+ LOGICAL, PARAMETER		:: zbc_transparent=.FALSE., zbc_part_reflective=.TRUE., zbc_full_reflective=.FALSE.
+ 
+ REAL(num), PARAMETER	:: tanthetathresh=0.02_num 
 
  LOGICAL		:: maxwellEfirst
  REAL(num), PARAMETER	:: maxwellpeaktemp= 1e6_num
