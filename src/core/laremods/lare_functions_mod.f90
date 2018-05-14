@@ -7,10 +7,28 @@ USE GLOBAL
 
   PRIVATE
   PUBLIC :: stagger_bx, stagger_by, stagger_bz, stagger_bx_2d, stagger_by_2d
-  PUBLIC :: linterp3d, linterp2d, linterp1d, T2d, t3d, str_cmp, check_dims
+  PUBLIC :: stagger_j
+  PUBLIC :: linterp3d, linterp2d, linterp1d, T2d, t3d, check_dims!,str_cmp
 
 CONTAINS
 !--------------------------------------
+FUNCTION stagger_j(var)
+!+ function for de-staggering any j
+    REAL(num), DIMENSION(:,:), INTENT(IN)  		:: var
+    REAL(num), DIMENSION(SIZE(var,1), SIZE(var,2))	:: stagger_j 
+    INTEGER	:: mny, mnz
+    
+    mny=size(var,1)
+    mnz=size(var,2)
+    
+    !staggering right
+    stagger_j(1:mny-1,1:mnz)=0.5_num*(var(1:mny-1,1:mnz)+var(2:mny,1:mnz))
+    stagger_j(mny,1:mnz)=var(mny,1:mnz)
+    
+    RETURN
+
+END FUNCTION stagger_j
+!-------------------------------!
 FUNCTION stagger_bx(var)
 !+ function for de-staggering bx
     REAL(num), DIMENSION(:,:), INTENT(IN)  		:: var
@@ -1281,29 +1299,29 @@ FUNCTION T3d(R,T)
 
 END FUNCTION T3d
 !-----------------------------------------------;
-  FUNCTION str_cmp(str_in, str_test)
-
-    CHARACTER(*), INTENT(IN) :: str_in, str_test
-    CHARACTER(30) :: str_trim
-    LOGICAL :: str_cmp
-    INTEGER :: l
-
-    str_trim = TRIM(ADJUSTL(str_in))
-    l = LEN(str_test)
-
-    IF (l > LEN(str_in)) THEN
-      str_cmp = .FALSE.
-      RETURN
-    END IF
-
-    IF (str_trim(l+1:l+1) /= ' ') THEN
-      str_cmp = .FALSE.
-      RETURN
-    END IF
-
-    str_cmp = str_trim(1:l) == str_test
-
-  END FUNCTION str_cmp
+!  FUNCTION str_cmp(str_in, str_test)!
+!
+!    CHARACTER(*), INTENT(IN) :: str_in, str_test
+!    CHARACTER(30) :: str_trim
+!    LOGICAL :: str_cmp
+!    INTEGER :: l!
+!
+!    str_trim = TRIM(ADJUSTL(str_in))
+!    l = LEN(str_test)!
+!
+!    IF (l > LEN(str_in)) THEN
+!      str_cmp = .FALSE.
+!      RETURN
+!    END IF
+!
+!    IF (str_trim(l+1:l+1) /= ' ') THEN
+!      str_cmp = .FALSE.
+!      RETURN
+!    END IF
+!
+!    str_cmp = str_trim(1:l) == str_test
+!
+!  END FUNCTION str_cmp
 !---------------------------------------------------  
     SUBROUTINE check_dims(dims)
 

@@ -2,7 +2,7 @@ MODULE lare_fields
 ! lare interface which is dynamically called, depending on whether you are interested in 2d or 3d lare data
   
   USE GLOBAL
-  USE lare_functions, ONLY: str_cmp, T2d, T3d
+  USE lare_functions, ONLY: T2d, T3d
 
   IMPLICIT NONE
   

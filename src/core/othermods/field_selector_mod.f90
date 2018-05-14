@@ -5,8 +5,8 @@ MODULE M_fields
   USE lare_fields, ONLY: LAREFIELDS
   USE CMT_fields, ONLY: CMTFIELDS
   USE test_fields, ONLY: TESTFIELDS
-  USE lare_functions, ONLY: str_cmp
-  USE bourdin_fields, ONLY: BOURDINFIELDS
+  USE bourdin_fields, ONLY: BOURDINFIELDS  
+  USE NLFF_fields, ONLY: NLFFFIELDS
   USE FR_fields, ONLY: FRFIELDS
   
   IMPLICIT NONE
@@ -42,9 +42,11 @@ SUBROUTINE FIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf,T1,T2)
       route=6
     ELSE IF ((str_cmp(FMOD, "FRE")).OR.(str_cmp(FMOD, "fre"))) THEN
       route=7
+    ELSE IF ((str_cmp(FMOD, "NLFF")).OR.(str_cmp(FMOD, "nlff"))) THEN
+      route=8
     ELSE
-      PRINT*, "incorrect module selection, choose from:"
-      PRINT*, "['l3d','l2d','sep','CMT','test','bour','FRE']"
+      PRINT*, "FIELD SELECTOR MODULE: incorrect field choice, choose from:"
+      PRINT*, "['l3d','l2d','sep','CMT','test','bour','FRE', 'NLFF']"
       STOP
     END IF
     GO TO 100 ! now actually head back and select case we want!
@@ -62,6 +64,8 @@ SUBROUTINE FIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf,T1,T2)
     CALL BOURDINFIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf)
   CASE(7)
     CALL FRFIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf)
+  CASE(8)
+    CALL NLFFFIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf)
 END SELECT
 
 

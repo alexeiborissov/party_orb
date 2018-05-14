@@ -2,10 +2,11 @@ PROGRAM reltest		! Relativistic Particle Code: Main Program (JT Dec 2015)
 !+ sets up initial field conditions, particle grid and hands over to rkdriver
 
 USE GLOBAL
-USE lare_functions
+!USE lare_functions
 USE mpi_routines
 USE M_DRIVERR, ONLY: RKDRIVE
 USE bourdin_fields, ONLY: bour_ini, bour_fini
+USE NLFF_fields, ONLY: NLFFF_ini, NLFFF_fini
 USE M_products, ONLY: DOT, CROSS
 USE M_fields, ONLY: FIELDS
 USE gammadist_mod, ONLY: random_gamma
@@ -21,10 +22,8 @@ IMPLICIT NONE
  LOGICAL :: file_exists
  
  REAL(num), DIMENSION(3) :: gds, lbox
- !REAL(num), DIMENSION(3) :: RSTART,RSTARTKEEP!, R1,R2
  REAL(num), DIMENSION(NKEEPMAX) :: TT 
  REAL(num), DIMENSION(NKEEPMAX,3) :: S, TOTAL
- !REAL(num), DIMENSION(3) :: Et,Bt,DBDXt,DBDYt,DBDZt,DBDTt,DEDXt,DEDYt,DEDZt,DEDTt,Vft
  
  CHARACTER(LEN=35)	 :: finfile, sumname
  
@@ -35,6 +34,7 @@ IMPLICIT NONE
  l3dflag=.FALSE.
  l2dflag=.FALSE.
  analyticalflag=.FALSE.
+ NLFFflag=.FALSE.
 
  ! read in input parameters
  CALL read_param
@@ -42,7 +42,9 @@ IMPLICIT NONE
  ! initial setup options depend on chosen environment
   IF ((str_cmp(FMOD, "L3D")).OR.(str_cmp(FMOD, "l3d"))) THEN
    c_ndims=3
-   !allocate(dims(ndims))
+   xee=xe
+   yee=ye
+   zee=ze
    l3dflag=.TRUE.
    CALL MPI_INIT(errcode)
    CALL mpi_initialise      ! mpi_routines.f90
@@ -58,9 +60,10 @@ IMPLICIT NONE
    PRINT*, '..evaluating particle array against lare grid..' 
   ELSE IF ((str_cmp(FMOD, "L2D")).OR.(str_cmp(FMOD, "l2d"))) THEN
    l2dflag=.TRUE.
-   c_ndims=2
-   !ndims=ndims
-   !allocate(dims(ndims))
+   c_ndims=2   
+   xee=xe
+   yee=ye
+   zee=ze
    CALL MPI_INIT(errcode)
    CALL mpi_initialise_2d
    IF ((R1(3).NE.R2(3)).OR.(RSTEPS(3).GT.1)) THEN
@@ -77,11 +80,18 @@ IMPLICIT NONE
   ELSE IF ((str_cmp(FMOD, "SEP")).OR.(str_cmp(FMOD, "sep"))) THEN
     analyticalflag=.TRUE.
     PRINT*, '..evaluating particle array against analytical field bounds..'
-    
   ELSE IF ((str_cmp(FMOD, "CMT")).OR.(str_cmp(FMOD, "cmt"))) THEN
       !CMT  setup?
   ELSE IF ((str_cmp(FMOD, "TEST")).OR.(str_cmp(FMOD, "test"))) THEN
       !test setup?
+  ELSE IF ((str_cmp(FMOD, "NLFF")).OR.(str_cmp(FMOD, "nlff"))) THEN
+   NLFFflag=.TRUE.
+   CALL NLFFF_ini
+   xee=(/myx(6),myx(nx-5)/)
+   yee=(/myy(6),myy(ny-5)/)
+   zee=(/myz(6),myz(nz-5)/)     
+   print*, '----'
+   PRINT*, '..evaluating particle array against NLFF grid..' 
   ELSE IF ((str_cmp(FMOD, "BOR")).OR.(str_cmp(FMOD, "bor"))) THEN
    bourdinflag=.TRUE.
    CALL bour_ini      ! read in data
@@ -92,24 +102,24 @@ IMPLICIT NONE
    PRINT*, '..evaluating particle array against BOURDIN grid..'
   ELSE
    PRINT*, "incorrect module selection, choose from:"
-   PRINT*, "['l3d','l2d','sep','CMT','test','bour']"
+   PRINT*, "['l3d','l2d','sep','CMT','test','bour', 'nlff']"
    STOP
   END IF
   
   ! chose particle range xe/ye/ze -> particles must not start outside this range!
-  IF (((R1(1)/lscl).le.xe(1)).OR.((R2(1)/lscl).ge.xe(2)))  THEN
+  IF (((R1(1)/lscl).le.xee(1)).OR.((R2(1)/lscl).ge.xee(2)))  THEN
     WRITE(*,*) '..particles not within x extent '
     print*, R1(1)/lscl
-    print*, xe(1) 
+    print*, xee(1) 
     print*, R2(1)/lscl
-    print*, xe(2) 
+    print*, xee(2) 
     gflag=.true.
    ENDIF
-   IF (((R1(2)/lscl).le.ye(1)).OR.((R2(2)/lscl).ge.ye(2)))  THEN
+   IF (((R1(2)/lscl).le.yee(1)).OR.((R2(2)/lscl).ge.yee(2)))  THEN
     WRITE(*,*) '..particles not within y extent '
     gflag=.true.
    ENDIF
-   IF (((R1(3)/lscl).le.ze(1)).OR.((R2(3)/lscl).ge.ze(2)))  THEN
+   IF (((R1(3)/lscl).le.zee(1)).OR.((R2(3)/lscl).ge.zee(2)))  THEN
     WRITE(*,*) '..particles not within z extent '
     gflag=.true.
    ENDIF
@@ -132,9 +142,6 @@ IMPLICIT NONE
 
   nparticles=RSTEPS(1)*RSTEPS(2)*RSTEPS(3)*(AlphaSteps-1)*EkinSteps
   dalpha = (AlphaMax-Alphamin)/(Alphasteps - 1.0d0) !added by S.Oskoui
-  
-  !Adjust T2 to use loop value.
-  !T2=time_no*1.0_num
 
   T1Keep=T1
   T2Keep=T2
@@ -174,6 +181,10 @@ IMPLICIT NONE
     fcount=fcount+1
     WRITE(sumname,"(A,'Rsum',i1'.dat')"),dlocR, fcount
     inquire(file=sumname, exist=file_exists)
+    IF (fcount.gt.9) THEN
+      PRINT*, 'TEN summary files encountered: delete or move some!'
+      EXIT 
+    ENDIF
    ENDDO
    print*, 'dumping start and end times, positions and energies to ', sumname
    open(39,file=sumname,recl=1024,status='unknown')
@@ -276,9 +287,11 @@ IMPLICIT NONE
   CALL mpi_close                     ! mpi_routines.f90
   CALL MPI_FINALIZE(errcode)
  ENDIF
-
  IF ((str_cmp(FMOD, "BOUR")).OR.(str_cmp(FMOD, "bour"))) THEN
   CALL bour_fini      		! deallocate stuff, leave everything nice and tidy
+ ENDIF 
+ IF ((str_cmp(FMOD, "NLFF")).OR.(str_cmp(FMOD, "nlff"))) THEN
+  CALL NLFFF_fini      		! deallocate stuff, leave everything nice and tidy
  ENDIF 
 
 !------------------------------------------------------------------------------!
@@ -312,6 +325,8 @@ SUBROUTINE JTMUcalc(mu,USTART,GAMMASTART, Ekin,alpha,RSTART,T1,T2)
  ue=cross(El,B)/dot(B,B)  !*0.5
  Etemp=Ekin
  
+ print*, 'Etemp=', Ekin
+ 
  !need to check if 1/2mUE^2 is covered by the initial KE
  IF (Ekin.lt.0.5d0*m*vscl*vscl*dot(ue,ue)*6.242e18) THEN
   PRINT*, 'WARNING: raising Initial KE to account for local UE drift'
@@ -342,6 +357,9 @@ SUBROUTINE JTMUcalc(mu,USTART,GAMMASTART, Ekin,alpha,RSTART,T1,T2)
  
  !Ustart=(c*sqrt(gamma*gamma-1))*cos(alpha)
  Ustart=gamma*vtot*cos(alpha)
+ 
+ 
+ print*, vtot*cos(alpha)
  
  mu=0.5_num*m*vtot*vtot*sin(alpha)*sin(alpha)*gamma*gamma/modB		
  

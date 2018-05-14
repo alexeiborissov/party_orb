@@ -25,19 +25,16 @@ SUBROUTINE RKDRIVE(RSTART,VPARSTART,MU,T1,T2,EPS,H1,NOK,NBAD,TT,S,TOTAL)
  !INTEGER, PARAMETER :: num = KIND(1.0)
 
  !max. no of functions and max no. of steps to be stored
- INTEGER				:: NOK, NBAD
- INTEGER				:: I
- INTEGER				:: UNDERFLOW
+ INTEGER				:: NOK, NBAD, I, UNDERFLOW 
+ INTEGER, DIMENSION(6), SAVE 		:: bcroute = (/-1,-1,-1,-1,-1,-1/)
  REAL(num), PARAMETER			:: TINY=1E-20
  REAL(num), INTENT(IN)			:: EPS, H1,MU
  REAL(num), INTENT(INOUT)		:: T1,T2
  REAL(num), INTENT(INOUT), DIMENSION(3) :: RSTART
  REAL(num), DIMENSION(3)		:: DRDT, R
+ REAL(num),  DIMENSION(3)		:: RLAST
  REAL(num), DIMENSION(3)		:: E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf
- REAL(num), DIMENSION(3)		:: bb, GRADB
- REAL(num), DIMENSION(3)		:: ENERGY
- REAL(num), DIMENSION(3)		:: UE
- REAL(num), DIMENSION(3)		:: UGB, UC
+ REAL(num), DIMENSION(3)		:: bb, GRADB, ENERGY, UE, UGB, UC
  REAL(num), DIMENSION(4)		:: RSCAL 
  REAL(num), DIMENSION(NKEEPMAX)		:: TT
  REAL(num), DIMENSION(NKEEPMAX,3)	:: S, TOTAL
@@ -47,7 +44,7 @@ SUBROUTINE RKDRIVE(RSTART,VPARSTART,MU,T1,T2,EPS,H1,NOK,NBAD,TT,S,TOTAL)
  REAL(num) 				:: gyrofreq, gyroperiod, gyrorad, Epar
  REAL(num)				:: MODB, oMODB,  DMODBDS, MODGRADB
  CHARACTER(LEN=30)			:: rvfilename
-  CHARACTER(LEN=35)			:: tempf, tempf2, tempf3
+ CHARACTER(LEN=35)			:: tempf, tempf2, tempf3
 
   T=T1
   TT(1) = T1
@@ -120,7 +117,7 @@ UNDERFLOW=0
 
 !****************************** Main Time-Loop Starts **************
   DO NSTP = 1, NSTPMAX
-
+   PRINT*, NSTP
    CALL DERIVS (T, R, DRDT, VPAR, DVPARDT,MU, T1, T2, UGB, UC)
      
     vtot_non = sqrt(Vpar*Vpar + 2.0_num*MU*sqrt(dot(B,B)))
@@ -161,9 +158,11 @@ UNDERFLOW=0
     H=T2-T  			 !if stepsize can overshoot, decrease
    END IF 
 
+   
+   RLAST=R
    CALL RKQS(R,DRDT,VPAR,DVPARDT,T,H,MU,EPS,RSCAL,HDID,HNEXT,T1,T2, UNDERFLOW)	! T modified here.
    
-       MODB = SQRT(B(1)*B(1) + B(2)*B(2) + B(3)*B(3))		! |B|
+    MODB = SQRT(B(1)*B(1) + B(2)*B(2) + B(3)*B(3))		! |B|
     oMODB=1.0_num/MODB
     GRADB(1) = DOT(B,DBDX)*oMODB
     GRADB(2) = DOT(B,DBDY)*oMODB
@@ -238,7 +237,7 @@ UNDERFLOW=0
     gyroperiod=1.0_num/gyrofreq
     gyrorad=MoAQ*Vscl/Bscl*sqrt(2.0_num*MU/sqrt(dot(B,B)))
     
-      IF (writervs) write(29,*)Tscl*(T-T1),		&  !1
+    IF (writervs) write(29,*)Tscl*(T-T1),		&  !1
       Lscl*R,							&  !2,3,4
       Vscl*VPAR,						&  !5
       MU*sqrt(dot(B,B)),					&  !6
@@ -286,55 +285,302 @@ UNDERFLOW=0
 !    VPARSTART=VPAR
 !    RETURN
 !   ENDIF
-
-   IF ( ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR. &
-   (bourdinflag).OR.(testflag).OR.(FREflag).OR.(CMTflag)) &
-   			    .AND.(R(3).GE.ze(2)).OR.(R(3).LE.ze(1))) THEN
-    !print *, ' z bounds encountered'
-    IF (zbc_transparent) THEN
-      print *, 'box extent exit'
-      IF (JTo4) write(49,*), 'B'
-      DO I = 1,3
-        RSTART(I)=R(I)
-      ENDDO
-      T2 = T
-      VPARSTART=VPAR
-      RETURN
-    ENDIF
-    IF (zbc_part_reflective) THEN
-      IF (sqrt(sum((DRDT-VPAR*bb)**2))/sqrt(VPAR*VPAR).ge.tanthetathresh) THEN
-       VPAR=-VPAR
-       print *, 'bounce'
-      ELSE
-       print *, 'box extent exit'
-       IF (JTo4) write(49,*), 'B'
-       DO I = 1,3
-        RSTART(I)=R(I)
-       ENDDO
-       T2 = T
-       VPARSTART=VPAR
-       RETURN
-      ENDIF 
-    ENDIF
-    IF (zbc_full_reflective) THEN
-      VPAR=-VPAR
-      print*, 'bounce'
-    ENDIF  
-   ENDIF
-   IF ( ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR. &
-   (bourdinflag).OR.(testflag).OR.(FREflag).OR.(CMTflag)) &
-   			    .AND.((R(1).GE.xe(2)).OR.(R(1).LE.xe(1))) &
-   			    .OR.((R(2).GE.ye(2)).OR.(R(2).LE.ye(1))) ) THEN
-   ! print *, ' side box extent exit'
-    IF (JTo4) write(49,*), 'B'
-    DO I = 1,3
-      RSTART(I)=R(I)
-    ENDDO
-    T2 = T
-    VPARSTART=VPAR
-    RETURN
-   ENDIF   
+IF ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR.(NLFFflag).OR. &
+   (bourdinflag).OR.(testflag).OR.(FREflag).OR.(CMTflag))  THEN 
+   !organising boundary conditions:
+   ! CHECK X bottom and top, Y bottom and top, Z bottom and top.
    
+    IF ((R(1).LE.xee(1)).AND.(DRDT(1).LT.0)) THEN	! if bottom bound AND heading downwards 
+       101 SELECT CASE(bcroute(1))
+       CASE(-1) ! setup on first use of subroutine
+        IF (str_cmp(xlowbc, bcchoices(1))) THEN 	!transparent
+         bcroute(1)=1
+        ELSE IF (str_cmp(xlowbc, bcchoices(2))) THEN 	!partial reflective
+         bcroute(1)=2  	
+        ELSE IF (str_cmp(xlowbc, bcchoices(3))) THEN 	!fully reflective
+         bcroute(1)=3   
+        ELSE
+         PRINT*, "confused about boundary condition choice"
+         STOP
+        END IF
+        GO TO 101 ! now actually head back and select case we want!
+       CASE(1)
+        print *, 'box extent exit'
+        IF (JTo4) write(49,*), 'B'
+        DO I = 1,3
+         RSTART(I)=R(I)
+        ENDDO
+        T2 = T
+        VPARSTART=VPAR
+        RETURN
+       CASE(2)
+        IF (sqrt(sum((DRDT-VPAR*bb)**2))/sqrt(VPAR*VPAR).ge.tanthetathresh) THEN
+         VPAR=-VPAR	
+	 R=RLAST
+         print *, 'bounce' 
+         !H=SIGN(H1,T2-T1)	! if there is a reflection, do we need to reset the step size?
+         CYCLE
+        ELSE
+         print *, 'box extent exit'
+         IF (JTo4) write(49,*), 'B'
+         DO I = 1,3
+          RSTART(I)=R(I)
+         ENDDO
+         T2 = T
+	 VPARSTART=VPAR
+         RETURN
+        ENDIF
+       CASE(3)
+        VPAR=-VPAR
+	R=RLAST
+        print *, 'bounce'
+        !H=SIGN(H1,T2-T1)
+        CYCLE
+       END SELECT
+    ENDIF
+    IF ((R(1).GE.xee(2)).AND.(DRDT(1).GT.0)) THEN	! if top bound AND heading upwards
+       102 SELECT CASE(bcroute(2))
+       CASE(-1)
+        IF (str_cmp(xupbc, bcchoices(1))) THEN 
+         bcroute(2)=1
+        ELSE IF (str_cmp(xupbc, bcchoices(2))) THEN
+         bcroute(2)=2  
+        ELSE IF (str_cmp(xupbc, bcchoices(3))) THEN
+         bcroute(2)=3   
+        ELSE
+         PRINT*, "confused about boundary condition choice"
+         STOP
+        END IF
+        GO TO 102 
+       CASE(1)
+        print *, 'box extent exit'
+        IF (JTo4) write(49,*), 'B'
+        DO I = 1,3
+         RSTART(I)=R(I)
+        ENDDO
+        T2 = T	
+	VPARSTART=VPAR
+        RETURN
+       CASE(2)
+        IF (sqrt(sum((DRDT-VPAR*bb)**2))/sqrt(VPAR*VPAR).ge.tanthetathresh) THEN
+         VPAR=-VPAR
+	 R=RLAST
+         print *, 'bounce' 
+         !H=SIGN(H1,T2-T1)	! if there is a reflection, do we need to reset the step size?
+         CYCLE
+        ELSE
+         print *, 'box extent exit'
+         IF (JTo4) write(49,*), 'B'
+         DO I = 1,3
+          RSTART(I)=R(I)
+         ENDDO
+         T2 = T
+	 VPARSTART=VPAR
+         RETURN
+        ENDIF
+       CASE(3)
+        VPAR=-VPAR	
+	R=RLAST
+        print *, 'bounce'
+        !H=SIGN(H1,T2-T1)
+        CYCLE
+       END SELECT
+    ENDIF
+    IF ((R(2).LE.yee(1)).AND.(DRDT(2).LT.0)) THEN	! if bottom bound AND heading downwards 
+       103 SELECT CASE(bcroute(3))
+       CASE(-1) ! setup on first use of subroutine
+        IF (str_cmp(ylowbc, bcchoices(1))) THEN !transparent
+         bcroute(3)=1
+        ELSE IF (str_cmp(ylowbc, bcchoices(2))) THEN !partial reflective
+         bcroute(3)=2  
+        ELSE IF (str_cmp(ylowbc, bcchoices(3))) THEN !fully reflective
+         bcroute(3)=3   
+        ELSE
+         PRINT*, "confused about boundary condition choice"
+         STOP
+        END IF
+        GO TO 103 ! now actually head back and select case we want!
+       CASE(1)
+        print *, 'box extent exit'
+        IF (JTo4) write(49,*), 'B'
+        DO I = 1,3
+         RSTART(I)=R(I)
+        ENDDO
+        T2 = T	 
+	VPARSTART=VPAR
+        RETURN
+       CASE(2)
+        IF (sqrt(sum((DRDT-VPAR*bb)**2))/sqrt(VPAR*VPAR).ge.tanthetathresh) THEN
+         VPAR=-VPAR	
+	 R=RLAST
+         print *, 'bounce'
+         !H=SIGN(H1,T2-T1)	
+         CYCLE
+        ELSE
+         print *, 'box extent exit'
+         IF (JTo4) write(49,*), 'B'
+         DO I = 1,3
+          RSTART(I)=R(I)
+         ENDDO
+         T2 = T	
+	 VPARSTART=VPAR
+         RETURN
+        ENDIF
+       CASE(3)
+        VPAR=-VPAR	 
+	R=RLAST
+        print *, 'bounce'
+        !H=SIGN(H1,T2-T1)
+        CYCLE
+       END SELECT
+    ENDIF
+    IF ((R(2).GE.yee(2)).AND.(DRDT(2).GT.0)) THEN	! if top bound AND heading upwards
+       104 SELECT CASE(bcroute(4))
+       CASE(-1) 
+        IF (str_cmp(yupbc, bcchoices(1))) THEN 
+         bcroute(4)=1
+        ELSE IF (str_cmp(yupbc, bcchoices(2))) THEN 
+         bcroute(4)=2  
+        ELSE IF (str_cmp(yupbc, bcchoices(3))) THEN
+         bcroute(4)=3   
+        ELSE
+         PRINT*, "confused about boundary condition choice"
+         STOP
+        END IF
+        GO TO 104 
+       CASE(1)
+        print *, 'box extent exit'
+        IF (JTo4) write(49,*), 'B'
+        DO I = 1,3
+         RSTART(I)=R(I)
+        ENDDO
+        T2 = T
+	VPARSTART=VPAR
+        RETURN
+       CASE(2)        
+        IF (sqrt(sum((DRDT-VPAR*bb)**2))/sqrt(VPAR*VPAR).ge.tanthetathresh) THEN
+         VPAR=-VPAR
+	 R=RLAST
+         print *, 'bounce' 
+         !H=SIGN(H1,T2-T1)	! if there is a reflection, do we need to reset the step size?
+         CYCLE
+        ELSE
+         print *, 'box extent exit'
+         IF (JTo4) write(49,*), 'B'
+         DO I = 1,3
+          RSTART(I)=R(I)
+         ENDDO
+         T2 = T
+ 	 VPARSTART=VPAR
+         RETURN
+        ENDIF
+       CASE(3)	
+        R=RLAST
+        VPAR=-VPAR
+        print *, 'bounce'
+        !H=SIGN(H1,T2-T1)
+        CYCLE
+       END SELECT
+    ENDIF   
+    IF ((R(3).LE.zee(1)).AND.(DRDT(3).LT.0)) THEN	! if bottom bound AND heading downwards 
+       105 SELECT CASE(bcroute(5))
+       CASE(-1) ! setup on first use of subroutine
+        IF (str_cmp(zlowbc, bcchoices(1))) THEN
+         bcroute(5)=1
+        ELSE IF (str_cmp(zlowbc, bcchoices(2))) THEN 
+         bcroute(5)=2  
+        ELSE IF (str_cmp(zlowbc, bcchoices(3))) THEN 
+         bcroute(5)=3   
+        ELSE
+         PRINT*, "confused about boundary condition choice"
+         STOP
+        END IF
+        GO TO 105
+       CASE(1)
+        print *, 'box extent exit'
+        IF (JTo4) write(49,*), 'B'
+        DO I = 1,3
+         RSTART(I)=R(I)
+        ENDDO
+        T2 = T        
+	VPARSTART=VPAR
+        RETURN
+       CASE(2)        
+        IF (sqrt(sum((DRDT-VPAR*bb)**2))/sqrt(VPAR*VPAR).ge.tanthetathresh) THEN
+         VPAR=-VPAR
+	 R=RLAST
+         print *, 'bounce' 
+         !H=SIGN(H1,T2-T1)	! if there is a reflection, do we need to reset the step size?
+         CYCLE
+        ELSE
+         print *, 'box extent exit'
+         IF (JTo4) write(49,*), 'B'
+         DO I = 1,3
+          RSTART(I)=R(I)
+         ENDDO
+         T2 = T
+	 VPARSTART=VPAR
+         RETURN
+        ENDIF
+       CASE(3)
+        VPAR=-VPAR
+	R=RLAST
+        print*, 'bounce'
+        !print*, vpar, R(3), DRDT(3)
+	!H=SIGN(H1,T2-T1)
+        CYCLE
+       END SELECT
+    ENDIF
+    IF ((R(3).GE.zee(2)).AND.(DRDT(3).GT.0)) THEN	! if TOP zbound AND heading upwards 
+       106 SELECT CASE(bcroute(6))
+       CASE(-1)
+        IF (str_cmp(zupbc, bcchoices(1))) THEN 
+         bcroute(6)=1
+        ELSE IF (str_cmp(zupbc, bcchoices(2))) THEN 
+         bcroute(6)=2  
+        ELSE IF (str_cmp(zupbc, bcchoices(3))) THEN
+         bcroute(6)=3   
+        ELSE
+         PRINT*, "confused about boundary condition choice"
+         STOP
+        END IF
+        GO TO 106
+       CASE(1)
+        print *, 'box extent exit'
+        IF (JTo4) write(49,*), 'B'
+        DO I = 1,3
+         RSTART(I)=R(I)
+        ENDDO
+        T2 = T
+        VPARSTART=VPAR
+        RETURN
+       CASE(2)
+        IF (sqrt(sum((DRDT-VPAR*bb)**2))/sqrt(VPAR*VPAR).ge.tanthetathresh) THEN
+        VPAR=-VPAR	
+	R=RLAST
+        print *, 'bounce'
+         !H=SIGN(H1,T2-T1)	! if there is a reflection, do we need to reset the step size?
+         CYCLE
+        ELSE
+         print *, 'box extent exit'
+         IF (JTo4) write(49,*), 'B'
+         DO I = 1,3
+          RSTART(I)=R(I)
+         ENDDO
+         T2 = T
+         VPARSTART=VPAR
+         RETURN
+        ENDIF
+       CASE(3)
+        VPAR=-VPAR	
+	R=RLAST
+        print *, 'bounce'
+        !H=SIGN(H1,T2-T1)
+        CYCLE
+       END SELECT
+    ENDIF      
+   ENDIF
+      
    IF ((H.lt.EPS).AND.(HNEXT.lt.EPS)) THEN ! both this and the next step are unbelievably small so quit before we get stuck!
     print *, 'timestep shrink'
     IF (JTo4) write(49,*), 'H'

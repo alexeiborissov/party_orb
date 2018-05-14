@@ -10,15 +10,15 @@ MODULE global
  SAVE 
   
 !########################################################################## 
- CHARACTER(Len = 4), PARAMETER	:: FMOD='l3d' ! SWITCH BETWEEN FIELDS: "l3d","l2d", "SEP","CMT","test", or "bor"
+ CHARACTER(Len = 4), PARAMETER	:: FMOD='nlff' ! SWITCH BETWEEN FIELDS: "l3d","l2d", "SEP","CMT","test","bor", "NLFF"
  INTEGER, PARAMETER		:: mysnap=0000	!  no. of ****.cfd/****.sdf file (if "l3d")
- INTEGER, PARAMETER		:: nframes=5	! no. of frames
- CHARACTER(Len = 40)		:: sloc='../../laredata/twoloopsunstable/'
+ INTEGER, PARAMETER		:: nframes=1	! no. of frames
+ CHARACTER(Len = 40)		:: sloc='../../../data/'
 
 !##########################################################################
 ! now some stuff required to plug in lare data 
  
- INTEGER, PARAMETER		:: num = KIND(1.0d0), dbl = KIND(1.D0)
+ INTEGER, PARAMETER		:: num = KIND(1.0d0), dbl = KIND(1.D0), sp=KIND(1.0)
  INTEGER, PARAMETER		:: NKEEPMAX = 1000001		! max no of dumps
  INTEGER(KIND=8), PARAMETER	:: NSTPMAX  = 5E9	! max no of steps
  INTEGER(KIND=8)		:: NSTP				! step counter
@@ -27,9 +27,9 @@ MODULE global
  INTEGER 			:: frame 
  
 !JT DEBUGGING SWITCHES:
- LOGICAL, PARAMETER		:: writervs=.TRUE., writesum=.TRUE.			! ARE WE WRITING? (ALWAYS TRUE!) 
+ LOGICAL, PARAMETER		:: writervs=.TRUE., writesum=.FALSE.			! ARE WE WRITING? (ALWAYS TRUE!) 
  LOGICAL, PARAMETER		:: JTo=.TRUE., JTo2=.FALSE., JTo3=.FALSE., JTO4=.TRUE.	! various debugging switches (2&3 output every NSTP)
- LOGICAL, PARAMETER		:: FIELDDUMP=.FALSE.					! switch to dump the lare fields to unformatted data files.
+ LOGICAL, PARAMETER		:: FIELDDUMP=.FALSE.					! switch to dump the lare OR NLFFF fields to unformatted data files.
  LOGICAL, PARAMETER		:: everystepswitch=.FALSE.				! dumps EVERY NSTP to each particle data file.
  
 !PARTICLE quantities: 								
@@ -46,7 +46,11 @@ MODULE global
  LOGICAL			:: p_restart=.FALSE., p_stop=.FALSE. 		! are we starting or stopping midway through the arrays?
  LOGICAL			:: RANDOMISE_R, RANDOMISE_A, RANDOMISE_E	! switches for randomising position, angle and energy
 
- LOGICAL, PARAMETER		:: zbc_transparent=.FALSE., zbc_part_reflective=.TRUE., zbc_full_reflective=.FALSE.
+! boundary condition choices
+ CHARACTER(Len = 5), DIMENSION(3), PARAMETER 	:: bcchoices=(/'trans','partr','fullr'/)
+ CHARACTER(Len = 5), PARAMETER 			:: xlowbc=bcchoices(1), xupbc=bcchoices(1)	!choose boundary conditions for x
+ CHARACTER(Len = 5), PARAMETER 			:: ylowbc=bcchoices(1), yupbc=bcchoices(1)	! and y
+ CHARACTER(Len = 5), PARAMETER 			:: zlowbc=bcchoices(1), zupbc=bcchoices(1) 	! and z
  
  REAL(num), PARAMETER	:: tanthetathresh=0.02_num 
 
@@ -69,7 +73,7 @@ MODULE global
 
 ! NORMALISING SCALES 
  REAL(num), PARAMETER	:: Lscl = 1e6_num     		! 10 Mega meters (1e7)
- REAL(num), PARAMETER	:: Bscl = 0.001_num		! 100 Gauss 	 (0.01)
+ REAL(num), PARAMETER	:: Bscl = 0.01_num		! 100 Gauss 	 (0.01)
  !REAL(num), PARAMETER	:: Bscl = 1.0_num 		! 100 Gauss 	 (0.01)
  !REAL(num), PARAMETER	:: Escl = 1e3			! 10V/cm	 (1e3)
  !REAL(num), PARAMETER	:: Tscl = Lscl*Bscl/Escl        ! 100s	
@@ -126,9 +130,9 @@ MODULE global
 
  !REAL(num), DIMENSION(2), PARAMETER	:: xe=(/0.1_num,99.9_num/),ye=(/-0.1_num,99.9_num/),ze=(/-19.5_num,79.5_num/)
  !REAL(num), DIMENSION(2), PARAMETER	:: xe=(/-0.9_num,0.9_num/),ye=(/-0.9_num,0.9_num/),ze=(/-100.00_num,100.0_num/)
-  REAL(num), DIMENSION(2), PARAMETER	:: ze=(/-9.5_num,9.5_num/),ye=(/-1.8_num,1.8_num/),xe=(/-1.8_num,3.8_num/)
+ REAL(num), DIMENSION(2), PARAMETER	:: ze=(/-9.5_num,9.5_num/),ye=(/-1.8_num,1.8_num/),xe=(/-1.8_num,3.8_num/)
  !REAL(num), PARAMETER			:: eta=0.001_num, jcrit=25.0_num
- REAL(num), PARAMETER			:: eta=0.001_num, jcrit=5.0_num, rwidth=0.05_num, etabkg=0.00_num
+ REAL(num), PARAMETER			:: eta=0.00_num, jcrit=0.0_num, rwidth=0.05_num, etabkg=0.00_num
  !REAL(num), PARAMETER			:: eta=0.001_num, jcrit=20.0_num, rwidth=0.5_num
 
  CHARACTER(Len = 5), PARAMETER 	:: dloc='Data/'
@@ -137,25 +141,27 @@ MODULE global
  INTEGER, PARAMETER				:: mpireal = MPI_DOUBLE_PRECISION
  !INTEGER, PARAMETER				:: nx_global=64, ny_global=64, nz_global=64		! julie's lare3d cfd config
  !INTEGER, PARAMETER				:: nx_global=120, ny_global=120, nz_global=480		! alan's lare3d sdf config
- INTEGER, PARAMETER				:: nx_global=256, ny_global=256, nz_global=512		! alan's lare3d sdf config twoloops
+ !INTEGER, PARAMETER				:: nx_global=256, ny_global=256, nz_global=512		! alan's lare3d sdf config twoloops
+ INTEGER, PARAMETER				:: nx_global=256, ny_global=256, nz_global=256		! Steph/Duncan NLFFF resolution
  INTEGER, PARAMETER 				:: data_dir_max_length = 64
  INTEGER 					:: nx, ny, nz	
  INTEGER, DIMENSION(:), ALLOCATABLE		:: dims
 
- REAL(num), DIMENSION(:, :, :,:), ALLOCATABLE 	:: bx, by, bz, vx, vy, vz
- REAL(num), DIMENSION(:, :, :), ALLOCATABLE 	:: jx, jy, jz, Ex, Ey, Ez
+ REAL(num), DIMENSION(:, :, :, :), ALLOCATABLE 	:: bx, by, bz, vx, vy, vz
+ REAL(num), DIMENSION(:, :, :, :), ALLOCATABLE	:: jx, jy, jz
+ REAL(num), DIMENSION(:, :, :), ALLOCATABLE 	:: Ex, Ey, Ez
  REAL(num), DIMENSION(:, :, :), ALLOCATABLE 	:: dbxdx,dbxdy,dbxdz,dbydx,dbydy,dbydz,dbzdx,dbzdy,dbzdz
  REAL(num), DIMENSION(:, :, :), ALLOCATABLE 	:: dExdx,dExdy,dExdz,dEydx,dEydy,dEydz,dEzdx,dEzdy,dEzdz
  REAL(num), DIMENSION(:), 	ALLOCATABLE 	:: myx, myy, myz, ltimes
   
  CHARACTER(LEN = data_dir_max_length) :: data_dir
  CHARACTER(Len = 14)	:: mydataloc
- CHARACTER(Len = 4)	:: filetype1='.cfd', filetype2='.sdf'
+ CHARACTER(Len = 4)	:: filetype1='.cfd', filetype2='.sdf', filetype3='.sav'
  CHARACTER(LEN = 20) 	:: name, class, mesh_name, mesh_class
  
  !---BOURDIN DATA DEFINITIONS---! 
- CHARACTER(Len = 8)	:: filetypeb='.bin_f77'
- LOGICAL		:: bourdinflag, l3dflag, analyticalflag, l2dflag,FREflag, testflag, CMTflag
+ CHARACTER(Len = 8)		:: filetypeb='.bin_f77'
+ LOGICAL			:: bourdinflag, l3dflag, analyticalflag, l2dflag,FREflag, testflag, CMTflag, NLFFflag
  REAL(num), DIMENSION(2)	:: xee, yee, zee
   
   ! MPI data
@@ -234,6 +240,30 @@ SUBROUTINE init_random_seed()
 
       DEALLOCATE(seed)
 END SUBROUTINE
+!-----------------------------------------------;
+  FUNCTION str_cmp(str_in, str_test)
+
+    CHARACTER(*), INTENT(IN) :: str_in, str_test
+    CHARACTER(30) :: str_trim
+    LOGICAL :: str_cmp
+    INTEGER :: l
+
+    str_trim = TRIM(ADJUSTL(str_in))
+    l = LEN(str_test)
+
+    IF (l > LEN(str_in)) THEN
+      str_cmp = .FALSE.
+      RETURN
+    END IF
+
+    IF (str_trim(l+1:l+1) /= ' ') THEN
+      str_cmp = .FALSE.
+      RETURN
+    END IF
+
+    str_cmp = str_trim(1:l) == str_test
+
+  END FUNCTION str_cmp
 !----------------------------------------------------!
 
 END MODULE global

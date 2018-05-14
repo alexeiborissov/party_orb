@@ -3,9 +3,10 @@ PROGRAM NREL	! Non-Relativistic Particle Code: Main Program (JT Dec 2015)
 
 USE GLOBAL
 USE M_DRIVERN, ONLY: RKDRIVE
-USE lare_functions
+!USE lare_functions
 USE mpi_routines
 USE bourdin_fields, ONLY: bour_ini, bour_fini
+USE NLFF_fields, ONLY: NLFFF_ini, NLFFF_fini
 USE M_products, ONLY: DOT, CROSS
 USE M_fields, ONLY: FIELDS
 USE gammadist_mod, ONLY: random_gamma
@@ -21,10 +22,8 @@ IMPLICIT NONE
  LOGICAL :: file_exists
  
  REAL(num), DIMENSION(3) :: gds, lbox
- !REAL(num), DIMENSION(3) :: RSTART,RSTARTKEEP!, R1,R2
  REAL(num), DIMENSION(NKEEPMAX) :: TT 
  REAL(num), DIMENSION(NKEEPMAX,3) :: S, TOTAL
- !REAL(num), DIMENSION(3) :: Et,Bt,DBDXt,DBDYt,DBDZt,DBDTt,DEDXt,DEDYt,DEDZt,DEDTt,Vft
  REAL(num)		 :: e1t, e2t, e3t
  REAL(num), DIMENSION(3) :: Bt,Et,dum2,dum3,dum4,dum5,dum6,dum7,dum8,dum9,dum10,UEt
  CHARACTER(LEN=35)	 :: finfile, sumname
@@ -45,12 +44,16 @@ IMPLICIT NONE
  ! initial setup options depend on chosen environment
   IF ((str_cmp(FMOD, "L3D")).OR.(str_cmp(FMOD, "l3d"))) THEN
    c_ndims=3
-   !allocate(dims(ndims))
+   xee=xe
+   yee=ye
+   zee=ze
    l3dflag=.TRUE.
    CALL MPI_INIT(errcode)
    CALL mpi_initialise      ! mpi_routines.f90
+   
    ltimes=ltimes*l3dtimenorm
-   IF (((nframes.GT.1)).AND.((T1/tscl.lt.ltimes(0)).OR.(T2/tscl.gt.ltimes(nframes-1)))) THEN
+   print*, 'loaded times:', ltimes
+   IF (((nframes.GT.1)).AND.((T1/tscl.lt.ltimes(1)).OR.(T2/tscl.gt.ltimes(nframes)))) THEN
     PRINT*, 'FATAL ERROR!' 
     PRINT*, '(normalised) start/end times of particle range go beyond Lare grid of times'
     PRINT*, '-> RETHINK normalisation, ADD in more snapshots, or LIMIT orbit lifetime.'
@@ -59,9 +62,10 @@ IMPLICIT NONE
    PRINT*, '..evaluating particle array against lare grid..' 
   ELSE IF ((str_cmp(FMOD, "L2D")).OR.(str_cmp(FMOD, "l2d"))) THEN
    l2dflag=.TRUE.
-   c_ndims=2
-   !ndims=ndims
-   !allocate(dims(ndims))
+   c_ndims=2   
+   xee=xe
+   yee=ye
+   zee=ze
    CALL MPI_INIT(errcode)
    CALL mpi_initialise_2d
    IF ((R1(3).NE.R2(3)).OR.(RSTEPS(3).GT.1)) THEN
@@ -78,11 +82,18 @@ IMPLICIT NONE
   ELSE IF ((str_cmp(FMOD, "SEP")).OR.(str_cmp(FMOD, "sep"))) THEN
     analyticalflag=.TRUE.
     PRINT*, '..evaluating particle array against analytical field bounds..'
-    
   ELSE IF ((str_cmp(FMOD, "CMT")).OR.(str_cmp(FMOD, "cmt"))) THEN
       !CMT  setup?
   ELSE IF ((str_cmp(FMOD, "TEST")).OR.(str_cmp(FMOD, "test"))) THEN
       !test setup?
+  ELSE IF ((str_cmp(FMOD, "NLFF")).OR.(str_cmp(FMOD, "nlff"))) THEN
+   NLFFflag=.TRUE.
+   CALL NLFFF_ini
+   xee=(/myx(6),myx(nx-5)/)
+   yee=(/myy(6),myy(ny-5)/)
+   zee=(/myz(6),myz(nz-5)/)     
+   print*, '----'
+   PRINT*, '..evaluating particle array against NLFF grid..' 
   ELSE IF ((str_cmp(FMOD, "BOR")).OR.(str_cmp(FMOD, "bor"))) THEN
    bourdinflag=.TRUE.
    CALL bour_ini      ! read in data
@@ -93,25 +104,30 @@ IMPLICIT NONE
    PRINT*, '..evaluating particle array against BOURDIN grid..'
   ELSE
    PRINT*, "incorrect module selection, choose from:"
-   PRINT*, "['l3d','l2d','sep','CMT','test','bour']"
+   PRINT*, "['l3d','l2d','sep','CMT','test','bour', 'nlff']"
    STOP
   END IF
   
   ! chose particle range xe/ye/ze -> particles must not start outside this range!
-   IF (((R1(1)/lscl).le.xe(1)).OR.((R2(1)/lscl).ge.xe(2)))  THEN
+  IF (((R1(1)/lscl).le.xee(1)).OR.((R2(1)/lscl).ge.xee(2)))  THEN
     WRITE(*,*) '..particles not within x extent '
+    print*, R1(1)/lscl
+    print*, xee(1) 
+    print*, R2(1)/lscl
+    print*, xee(2) 
     gflag=.true.
    ENDIF
-   IF (((R1(2)/lscl).le.ye(1)).OR.((R2(2)/lscl).ge.ye(2)))  THEN
+   IF (((R1(2)/lscl).le.yee(1)).OR.((R2(2)/lscl).ge.yee(2)))  THEN
     WRITE(*,*) '..particles not within y extent '
     gflag=.true.
    ENDIF
-   IF (((R1(3)/lscl).le.ze(1)).OR.((R2(3)/lscl).ge.ze(2)))  THEN
+   IF (((R1(3)/lscl).le.zee(1)).OR.((R2(3)/lscl).ge.zee(2)))  THEN
     WRITE(*,*) '..particles not within z extent '
     gflag=.true.
    ENDIF
    IF (gflag) THEN
-    WRITE(*,*) 'terminating: particle grid out of bounds.'
+    PRINT*, '-FATAL ERROR-'
+    WRITE(*,*) '(particle grid out of bounds)'
     STOP
    ELSE 
     WRITE(*,*) 'fine!'

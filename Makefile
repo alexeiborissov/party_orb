@@ -45,8 +45,9 @@ OBJFILESN = global_mod.o mpi_routines.o products_mod.o lare_functions_mod.o l3dc
 	sdf_output_cartesian.o sdf_output_cartesian_r4.o sdf_output_cartesian_r8.o sdf_output_cartesian_ru.o\
 	sdf_output_point.o sdf_output_point_r4.o sdf_output_point_r8.o sdf_output_point_ru.o \
 	sdf_output_station.o sdf_output_station_r4.o sdf_output_station_r8.o sdf_output_station_ru.o\
-	iocontrol.o input.o inputfunctions.o input_cartesian.o iocommon.o bourdinfields_mod.o\
+	iocontrol.o input.o inputfunctions.o input_cartesian.o iocommon.o bourdinfields_mod.o NLFFfields_mod.o\
 	separatorfields_mod.o CMTfields_mod.o field_selector_mod.o gammadist_mod.o nr_main.o
+
 OBJFILESR = global_mod.o mpi_routines.o products_mod.o lare_functions_mod.o l3dc_fields_mod.o FRfields_mod.o\
 	r_derivs_mod.o r_rkck_mod.o r_rkqs_mod.o r_rkdrive_mod.o testfields_mod.o l2dc_fields_mod.o\
 	l3ds_fields_mod.o sdf_common.o sdf_job_info.o sdf_control.o sdf.o sdf_output_util.o\
@@ -58,7 +59,7 @@ OBJFILESR = global_mod.o mpi_routines.o products_mod.o lare_functions_mod.o l3dc
 	sdf_output_cartesian.o sdf_output_cartesian_r4.o sdf_output_cartesian_r8.o sdf_output_cartesian_ru.o\
 	sdf_output_point.o sdf_output_point_r4.o sdf_output_point_r8.o sdf_output_point_ru.o\
 	sdf_output_station.o sdf_output_station_r4.o sdf_output_station_r8.o sdf_output_station_ru.o\
-	iocontrol.o input.o inputfunctions.o input_cartesian.o iocommon.o bourdinfields_mod.o \
+	iocontrol.o input.o inputfunctions.o input_cartesian.o iocommon.o bourdinfields_mod.o NLFFfields_mod.o\
 	separatorfields_mod.o CMTfields_mod.o field_selector_mod.o gammadist_mod.o r_main.o
 
 
@@ -87,11 +88,9 @@ $(FULLTARGETN): $(OBJFILESN)
 $(FULLTARGETR): $(OBJFILESR)
 	$(FC) $(FFLAGS) $(MODULEFLAG) $(OBJDIR) -o $@ $(addprefix $(OBJDIR)/,$(OBJFILESR))
 
-nonrel: .$(OBJFILESN)
-	$(FC) $(FFLAGS) $(MODULEFLAG) $(OBJDIR) -o $@ $(addprefix $(OBJDIR)/,$(OBJFILESN))
+nonrel: $(FULLTARGETN)
 
-rel:  $(OBJFILESR)
-	$(FC) $(FFLAGS) $(MODULEFLAG) $(OBJDIR) -o $@ $(addprefix $(OBJDIR)/,$(OBJFILESR))
+rel:  $(FULLTARGETR)
 
 clean:
 	@rm -rf *~ $(BINDIR) $(OBJDIR) $(MODDIR) $(SRCDIR)/*~ $(SRCDIR)/core/*~
@@ -166,7 +165,8 @@ mpi_routines.o:mpi_routines.f90 global_mod.o l3dc_fields_mod.o l3ds_fields_mod.o
 l3ds_fields_mod.o: l3ds_fields_mod.f90 sdf_common.o global_mod.o sdf.o sdf_job_info.o lare_functions_mod.o
 l2ds_fields_mod.o: l2ds_fields_mod.f90 sdf_common.o global_mod.o sdf.o sdf_job_info.o lare_functions_mod.o
 bourdinfields_mod.o: bourdinfields_mod.f90 lare_functions_mod.o global_mod.o products_mod.o
-field_selector_mod.o: field_selector_mod.f90 lare_fields_mod.o lare_functions_mod.o CMTfields_mod.o separatorfields_mod.o testfields_mod.o bourdinfields_mod.o FRfields_mod.o global_mod.o
+NLFFfields_mod.o: NLFFfields_mod.f90 lare_functions_mod.o global_mod.o products_mod.o
+field_selector_mod.o: field_selector_mod.f90 lare_fields_mod.o lare_functions_mod.o CMTfields_mod.o separatorfields_mod.o testfields_mod.o bourdinfields_mod.o NLFFfields_mod.o FRfields_mod.o global_mod.o
 ##--NREL DEPENDENCIES
 nr_derivs_mod.o: nr_derivs_mod.f90 global_mod.o field_selector_mod.o products_mod.o 
 nr_rkck_mod.o: nr_rkck_mod.f90 nr_derivs_mod.o global_mod.o field_selector_mod.o
@@ -178,5 +178,5 @@ r_rkck_mod.o: r_rkck_mod.f90 r_derivs_mod.o global_mod.o field_selector_mod.o
 r_rkqs_mod.o: r_rkqs_mod.f90 global_mod.o r_rkck_mod.o field_selector_mod.o
 r_rkdrive_mod.o: r_rkdrive_mod.f90 global_mod.o r_derivs_mod.o r_rkqs_mod.o field_selector_mod.o
 #mp
-nr_main.o: nr_main.f90 global_mod.o mpi_routines.o nr_rkdrive_mod.o products_mod.o field_selector_mod.o lare_functions_mod.o bourdinfields_mod.o gammadist_mod.o
-r_main.o: r_main.f90 global_mod.o mpi_routines.o r_rkdrive_mod.o products_mod.o field_selector_mod.o lare_functions_mod.o bourdinfields_mod.o gammadist_mod.o
+nr_main.o: nr_main.f90 global_mod.o mpi_routines.o nr_rkdrive_mod.o products_mod.o field_selector_mod.o lare_functions_mod.o bourdinfields_mod.o NLFFfields_mod.o gammadist_mod.o
+r_main.o: r_main.f90 global_mod.o mpi_routines.o r_rkdrive_mod.o products_mod.o field_selector_mod.o lare_functions_mod.o bourdinfields_mod.o NLFFfields_mod.o gammadist_mod.o

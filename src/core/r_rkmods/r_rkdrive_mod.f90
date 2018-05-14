@@ -22,18 +22,16 @@ SUBROUTINE RKDRIVE(RSTART,USTART,GAMMASTART,MU,T1,T2,EPS,H1,NOK,NBAD,TT,S,TOTAL)
 !##################################################################
   
  IMPLICIT NONE
- INTEGER				:: NOK, NBAD
- INTEGER				:: I 
- INTEGER				:: UNDERFLOW
+ INTEGER				:: NOK, NBAD, I, UNDERFLOW 
+ INTEGER, DIMENSION(6), SAVE 		:: bcroute = (/-1,-1,-1,-1,-1,-1/)
  REAL(num), PARAMETER			:: TINY=1E-20
  REAL(num), INTENT(IN)			:: EPS, H1,MU
  REAL(num), INTENT(INOUT)		:: T1,T2
- REAL(num), INTENT(INOUT), DIMENSION(3) :: RSTART
+ REAL(num), INTENT(INOUT), DIMENSION(3) :: RSTART 
+ REAL(num), DIMENSION(3)		:: RLAST
  REAL(num), DIMENSION(3)		:: DRDT, R
  REAL(num), DIMENSION(3)		:: E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf
- REAL(num), DIMENSION(3)		:: bb, GRADB
- REAL(num), DIMENSION(3)		:: ENERGY
- REAL(num), DIMENSION(3)		:: UE
+ REAL(num), DIMENSION(3)		:: bb, GRADB, ENERGY, UE
  REAL(num), DIMENSION(5)		:: RSCAL 
  REAL(num), DIMENSION(NKEEPMAX)		:: TT
  REAL(num), DIMENSION(NKEEPMAX,3)	:: S, TOTAL
@@ -140,9 +138,13 @@ UNDERFLOW=0
   !PRINT*, Epar*Escl
   
   DO NSTP = 1, NSTPMAX
+   
    CALL DERIVS (T, R, DRDT, U, DUDT,GAMMA,DGAMMADT,MU, T1, T2)
    vpar=U/GAMMA
    ek=efct*(gamma-1)*m*c*c
+   !print*, NSTP,dudt
+   
+   
    bb=B/sqrt(dot(B,B))
    UE=cross(E,B)/dot(B,B)
    Epar=dot(bb,E)
@@ -167,7 +169,7 @@ UNDERFLOW=0
     Lscl*R,						&   !2,3,4
     Vscl*VPAR,						&   !5
     MU*sqrt(dot(B,B)),					&   !6
-    vscl*sqrt(sum((DRDT-U/gamma*bb)**2)),			&   !7 !d|r_perp|/dt ?	
+    vscl*sqrt(sum((DRDT-U/gamma*bb)**2)),		&   !7 !d|r_perp|/dt ?	
     Escl*E,						&   !8,9,10
     Bscl*B,						&   !11,12,13
     vscl*vtot_non,					&   !14 vtot_non
@@ -194,6 +196,7 @@ UNDERFLOW=0
 
    !print 668, R
    !668 format ('R2=[',ES9.2,',',ES9.2,',',ES9.2,']')
+   RLAST=R
 
    CALL RKQS(R,DRDT,U,DUDT,GAMMA,DGAMMADT,T,H,MU,EPS,RSCAL,HDID,HNEXT,T1,T2, UNDERFLOW)	! T modified here.
    
@@ -248,7 +251,7 @@ UNDERFLOW=0
     CALL FIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf,T1,T2)
     
  
-    IF (((bourdinflag).OR.(l3dflag).OR.(l2dflag)).AND.(SUM(E).EQ.0.0_num).AND.(SUM(B).EQ.0.0_num) &
+    IF (((bourdinflag).OR.(l3dflag).OR.(l2dflag).OR.(NLFFflag)).AND.(SUM(E).EQ.0.0_num).AND.(SUM(B).EQ.0.0_num) &
  			      .AND.(SUM(DBDX).EQ.0.0_num).AND.(SUM(DBDY).EQ.0.0_num) &
 			      .AND.(SUM(DBDZ).EQ.0.0_num).AND.(SUM(DEDX).EQ.0.0_num) &
 			      .AND.(SUM(DEDY).EQ.0.0_num).AND.(SUM(DEDZ).EQ.0.0_num) &
@@ -264,8 +267,6 @@ UNDERFLOW=0
     GAMMASTART = GAMMA
     RETURN
    ENDIF
-    
-    
     
     bb=B/sqrt(dot(B,B))
     UE=cross(E,B)/dot(B,B)
@@ -324,92 +325,318 @@ UNDERFLOW=0
       RETURN                            !normal exit
     ENDIF
 
-! JT exit conditions:
-   !IF ( ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR. &
-   !(bourdinflag).OR.(testflag).OR.(FREflag).OR.(CMTflag)) &
-   !			    .AND.((R(1).GE.xe(2)).OR.(R(1).LE.xe(1)) &	! beyond simulation range
-   ! 			      .OR.(R(2).GE.ye(2)).OR.(R(2).LE.ye(1)) &
-   !			      .OR.(R(3).GE.ze(2)).OR.(R(3).LE.ze(1)))) THEN
-   ! print *, 'box extent exit'
-   ! IF (JTo4) write(49,*), 'B'
-   ! DO I = 1,3
-   !   RSTART(I)=R(I)
-   ! ENDDO
-   ! T2 = T
-   ! USTART = U
-   ! GAMMASTART = GAMMA
-   ! RETURN
-   !ENDIF
+    !SPATIAL EXIT AT BOUNDS
+   IF ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR.(NLFFflag).OR. &
+   (bourdinflag).OR.(testflag).OR.(FREflag).OR.(CMTflag))  THEN 
+   !organising boundary conditions:
+   ! CHECK X bottom and top, Y bottom and top, Z bottom and top IN ORDER.
+   ! each IF sets a default case B.C. that is used on future loop iterations after that for efficiency
+   ! each bounce moves the orbit back one step, inverts v||, and cycles the calculation
    
-   
-   IF ( ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR. &
-   (bourdinflag).OR.(testflag).OR.(FREflag).OR.(CMTflag)) &
-   			    .AND.(R(3).GE.ze(2)).OR.(R(3).LE.ze(1))) THEN
-    !print *, ' z bounds encountered'
-    IF (zbc_transparent) THEN
-      print *, 'box extent exit'
-      IF (JTo4) write(49,*), 'B'
-      DO I = 1,3
-        RSTART(I)=R(I)
-      ENDDO
-      T2 = T
-      USTART = U
-      GAMMASTART = GAMMA
-      RETURN
+    IF ((R(1).LE.xee(1)).AND.(DRDT(1).LT.0)) THEN	! if bottom bound AND heading downwards 
+       101 SELECT CASE(bcroute(1))
+       CASE(-1) ! setup on first use of subroutine
+        IF (str_cmp(xlowbc, bcchoices(1))) THEN !transparent
+         bcroute(1)=1
+        ELSE IF (str_cmp(xlowbc, bcchoices(2))) THEN !partial reflective
+         bcroute(1)=2  
+        ELSE IF (str_cmp(xlowbc, bcchoices(3))) THEN !fully reflective
+         bcroute(1)=3   
+        ELSE
+         PRINT*, "confused about boundary condition choice"
+         STOP
+        END IF
+        GO TO 101 ! now actually head back and select case we want!
+       CASE(1)
+        print *, 'box extent exit'
+        IF (JTo4) write(49,*), 'B'
+        DO I = 1,3
+         RSTART(I)=R(I)
+        ENDDO
+        T2 = T
+        USTART = U
+        GAMMASTART = GAMMA
+        RETURN
+       CASE(2)
+        IF (sqrt(MU*sqrt(dot(B,B))/gamma/gamma)/sqrt(U*U/gamma/gamma).ge.tanthetathresh) THEN
+         print *, 'bounce'
+         U=-U
+	 R=RLAST  
+         !H=SIGN(H1,T2-T1)	! if there is a reflection, do we need to reset the step size?
+         CYCLE
+        ELSE
+         print *, 'box extent exit'
+         !print *, sqrt(MU*sqrt(dot(B,B))/gamma/gamma)/sqrt(U*U/gamma/gamma)
+         IF (JTo4) write(49,*), 'B'
+         DO I = 1,3
+          RSTART(I)=R(I)
+         ENDDO
+         T2 = T
+         USTART = U
+         GAMMASTART = GAMMA
+         RETURN
+        ENDIF
+       CASE(3)
+        U=-U	 
+	R=RLAST
+        print *, 'bounce'
+        !H=SIGN(H1,T2-T1)
+        CYCLE
+       END SELECT
     ENDIF
-    IF (zbc_part_reflective) THEN
-      IF (sqrt(MU*sqrt(dot(B,B))/gamma/gamma)/sqrt(U*U/gamma/gamma).ge.tanthetathresh) THEN
-       !print *, 'bounce'
-       U=-U 
-      ELSE
-       print *, 'box extent exit'
-       !print *, sqrt(MU*sqrt(dot(B,B))/gamma/gamma)/sqrt(U*U/gamma/gamma)
-       IF (JTo4) write(49,*), 'B'
-       DO I = 1,3
-        RSTART(I)=R(I)
-       ENDDO
-       T2 = T
-       USTART = U
-       GAMMASTART = GAMMA
-       RETURN
-      ENDIF 
+    IF ((R(1).GE.xee(2)).AND.(DRDT(1).GT.0)) THEN	! if top bound AND heading upwards 
+       102 SELECT CASE(bcroute(2))
+       CASE(-1)
+        IF (str_cmp(xupbc, bcchoices(1))) THEN 
+         bcroute(2)=1
+        ELSE IF (str_cmp(xupbc, bcchoices(2))) THEN 
+         bcroute(2)=2  
+        ELSE IF (str_cmp(xupbc, bcchoices(3))) THEN 
+         bcroute(2)=3   
+        ELSE
+         PRINT*, "confused about boundary condition choice"
+         STOP
+        END IF
+        GO TO 102
+       CASE(1)
+        print *, 'box extent exit'
+        IF (JTo4) write(49,*), 'B'
+        DO I = 1,3
+         RSTART(I)=R(I)
+        ENDDO
+        T2 = T
+        USTART = U
+        GAMMASTART = GAMMA
+        RETURN
+       CASE(2)
+        IF (sqrt(MU*sqrt(dot(B,B))/gamma/gamma)/sqrt(U*U/gamma/gamma).ge.tanthetathresh) THEN
+         print *, 'bounce'
+         U=-U  	
+	 R=RLAST
+         !H=SIGN(H1,T2-T1)	
+         CYCLE
+        ELSE
+         print *, 'box extent exit'
+         IF (JTo4) write(49,*), 'B'
+         DO I = 1,3
+          RSTART(I)=R(I)
+         ENDDO
+         T2 = T
+         USTART = U
+         GAMMASTART = GAMMA
+         RETURN
+        ENDIF
+       CASE(3)
+        U=-U
+	R=RLAST
+        print *, 'bounce'
+        !H=SIGN(H1,T2-T1)
+        CYCLE
+       END SELECT
     ENDIF
-    IF (zbc_full_reflective) THEN
-      U=-U
-      !print *, 'bounce'
-    ENDIF  
-   ENDIF
-   IF ( ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR. &
-   (bourdinflag).OR.(testflag).OR.(FREflag).OR.(CMTflag)) &
-   			    .AND.((R(1).GE.xe(2)).OR.(R(1).LE.xe(1))) &
-   			    .OR.((R(2).GE.ye(2)).OR.(R(2).LE.ye(1)))) THEN
-   ! print *, ' side box extent exit'
-    IF (JTo4) write(49,*), 'B'
-    DO I = 1,3
-      RSTART(I)=R(I)
-    ENDDO
-    T2 = T
-    USTART = U
-    GAMMASTART = GAMMA
-    RETURN
-   ENDIF   
-   
- 
-   
-   !IF ( ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR. &
-   !(bourdinflag).OR.(testflag).OR.(FREflag).OR.(CMTflag)) &
-   !			    .AND.((R(1).GE.xe(2)).OR.(R(1).LE.xe(1)))
-   !			    .OR.((R(2).GE.ye(2)).OR.(R(2).LE.ye(1)))) THEN
-   ! print *, ' side box extent exit'
-   ! IF (JTo4) write(49,*), 'B'
-   ! DO I = 1,3
-   !   RSTART(I)=R(I)
-   ! ENDDO
-   ! T2 = T
-   ! USTART = U
-   ! GAMMASTART = GAMMA
-   ! RETURN
-   !ENDIF
+    IF ((R(2).LE.yee(1)).AND.(DRDT(2).LT.0)) THEN	! if bottom bound AND heading downwards 
+       103 SELECT CASE(bcroute(3))
+       CASE(-1) ! setup on first use of subroutine
+        IF (str_cmp(ylowbc, bcchoices(1))) THEN !transparent
+         bcroute(3)=1
+        ELSE IF (str_cmp(ylowbc, bcchoices(2))) THEN !partial reflective
+         bcroute(3)=2  
+        ELSE IF (str_cmp(ylowbc, bcchoices(3))) THEN !fully reflective
+         bcroute(3)=3   
+        ELSE
+         PRINT*, "confused about boundary condition choice"
+         STOP
+        END IF
+        GO TO 103 ! now actually head back and select case we want!
+       CASE(1)
+        print *, 'box extent exit'
+        IF (JTo4) write(49,*), 'B'
+        DO I = 1,3
+         RSTART(I)=R(I)
+        ENDDO
+        T2 = T
+        USTART = U
+        GAMMASTART = GAMMA
+        RETURN
+       CASE(2)
+        IF (sqrt(MU*sqrt(dot(B,B))/gamma/gamma)/sqrt(U*U/gamma/gamma).ge.tanthetathresh) THEN
+         print *, 'bounce'
+         U=-U  
+	 R=RLAST
+         !H=SIGN(H1,T2-T1)	! if there is a reflection, do we need to reset the step size?
+         CYCLE
+        ELSE
+         print *, 'box extent exit'
+         !print *, sqrt(MU*sqrt(dot(B,B))/gamma/gamma)/sqrt(U*U/gamma/gamma)
+         IF (JTo4) write(49,*), 'B'
+         DO I = 1,3
+          RSTART(I)=R(I)
+         ENDDO
+         T2 = T
+         USTART = U
+         GAMMASTART = GAMMA
+         RETURN
+        ENDIF
+       CASE(3)
+        U=-U
+	R=RLAST
+        print *, 'bounce'
+        !H=SIGN(H1,T2-T1)
+        CYCLE
+       END SELECT
+    ENDIF
+    IF ((R(2).GE.yee(2)).AND.(DRDT(2).GT.0)) THEN	! if top bound AND heading upwards
+       104 SELECT CASE(bcroute(4))
+       CASE(-1)
+        IF (str_cmp(yupbc, bcchoices(1))) THEN
+         bcroute(4)=1
+        ELSE IF (str_cmp(yupbc, bcchoices(2))) THEN
+         bcroute(4)=2  
+        ELSE IF (str_cmp(yupbc, bcchoices(3))) THEN
+         bcroute(4)=3   
+        ELSE
+         PRINT*, "confused about boundary condition choice"
+         STOP
+        END IF
+        GO TO 104
+       CASE(1)
+        print *, 'box extent exit'
+        IF (JTo4) write(49,*), 'B'
+        DO I = 1,3
+         RSTART(I)=R(I)
+        ENDDO
+        T2 = T
+        USTART = U
+        GAMMASTART = GAMMA
+        RETURN
+       CASE(2)
+        IF (sqrt(MU*sqrt(dot(B,B))/gamma/gamma)/sqrt(U*U/gamma/gamma).ge.tanthetathresh) THEN
+         print *, 'bounce'
+         U=-U 
+	 R=RLAST
+         !H=SIGN(H1,T2-T1)
+         CYCLE
+        ELSE
+         print *, 'box extent exit'
+         IF (JTo4) write(49,*), 'B'
+         DO I = 1,3
+          RSTART(I)=R(I)
+         ENDDO
+         T2 = T
+         USTART = U
+         GAMMASTART = GAMMA
+         RETURN
+        ENDIF
+       CASE(3)
+        U=-U
+	R=RLAST
+        print *, 'bounce'
+        !H=SIGN(H1,T2-T1)
+        CYCLE
+       END SELECT
+    ENDIF   
+    IF ((R(3).LE.zee(1)).AND.(DRDT(3).LT.0)) THEN	! if bottom bound AND heading downwards 
+       105 SELECT CASE(bcroute(5))
+       CASE(-1)
+        IF (str_cmp(zlowbc, bcchoices(1))) THEN 
+         bcroute(5)=1
+        ELSE IF (str_cmp(zlowbc, bcchoices(2))) THEN 
+         bcroute(5)=2  
+        ELSE IF (str_cmp(zlowbc, bcchoices(3))) THEN
+         bcroute(5)=3   
+        ELSE
+         PRINT*, "confused about boundary condition choice"
+         STOP
+        END IF
+        GO TO 105 
+       CASE(1)
+        print *, 'box extent exit'
+        IF (JTo4) write(49,*), 'B'
+        DO I = 1,3
+         RSTART(I)=R(I)
+        ENDDO
+        T2 = T
+        USTART = U
+        GAMMASTART = GAMMA
+        RETURN
+       CASE(2)
+        IF ((sqrt(MU*sqrt(dot(B,B))/gamma/gamma)/sqrt(U*U/gamma/gamma)).ge.tanthetathresh) THEN
+         print *, 'bounce'
+         U=-U  
+	 R=RLAST
+         !H=SIGN(H1,T2-T1)
+         CYCLE
+        ELSE
+	 print *, sqrt(MU*sqrt(dot(B,B))/gamma/gamma)/sqrt(U*U/gamma/gamma)
+         print *, 'box extent exit'
+         IF (JTo4) write(49,*), 'B'
+         DO I = 1,3
+          RSTART(I)=R(I)
+         ENDDO
+         T2 = T
+         USTART = U
+         GAMMASTART = GAMMA
+         RETURN
+        ENDIF
+       CASE(3)
+        U=-U
+	R=RLAST
+        print *, 'bounce'
+        !H=SIGN(H1,T2-T1)
+        CYCLE
+       END SELECT
+    ENDIF
+    IF ((R(3).GE.zee(2)).AND.(DRDT(3).GT.0)) THEN	! if TOP zbound AND heading upwards 
+       106 SELECT CASE(bcroute(6))
+       CASE(-1) ! setup on first use of subroutine
+        IF (str_cmp(zupbc, bcchoices(1))) THEN
+         bcroute(6)=1
+        ELSE IF (str_cmp(zupbc, bcchoices(2))) THEN 
+         bcroute(6)=2  
+        ELSE IF (str_cmp(zupbc, bcchoices(3))) THEN 
+         bcroute(6)=3   
+        ELSE
+         PRINT*, "confused about boundary condition choice"
+         STOP
+        END IF
+        GO TO 106
+       CASE(1)
+        print *, 'box extent exit'
+        IF (JTo4) write(49,*), 'B'
+        DO I = 1,3
+         RSTART(I)=R(I)
+        ENDDO
+        T2 = T
+        USTART = U
+        GAMMASTART = GAMMA
+        RETURN
+       CASE(2)
+        IF (sqrt(MU*sqrt(dot(B,B))/gamma/gamma)/sqrt(U*U/gamma/gamma).ge.tanthetathresh) THEN
+         print *, 'bounce'
+         U=-U  
+	 R=RLAST
+         !H=SIGN(H1,T2-T1)	! if there is a reflection, do we need to reset the step size?
+         CYCLE
+        ELSE
+         print *, 'box extent exit'
+         IF (JTo4) write(49,*), 'B'
+         DO I = 1,3
+          RSTART(I)=R(I)
+         ENDDO
+         T2 = T
+         USTART = U
+         GAMMASTART = GAMMA
+         RETURN
+        ENDIF
+       CASE(3)
+        U=-U
+	R=RLAST
+        print *, 'bounce'
+        !H=SIGN(H1,T2-T1)
+        CYCLE
+       END SELECT
+    ENDIF      
+   ENDIF  
    
    IF ((abs(H).lt.EPS).AND.(abs(HNEXT).lt.EPS)) THEN ! both this and the next step are unbelievably small so quit before we get stuck!
     print *, 'timestep shrink'
@@ -447,21 +674,21 @@ UNDERFLOW=0
    
       write(55,*)Tscl*(T-T1),				&   !1
       Lscl*R,						&   !2,3,4
-      Vscl*VPAR,						&   !5
-      MU*sqrt(dot(B,B)),					&   !6
-      vscl*sqrt(sum((DRDT-U/gamma*bb)**2)),			&   !7 !d|r_perp|/dt ?	
+      Vscl*VPAR,					&   !5
+      MU*sqrt(dot(B,B)),				&   !6
+      vscl*sqrt(sum((DRDT-U/gamma*bb)**2)),		&   !7 !d|r_perp|/dt ?	
       Escl*E,						&   !8,9,10
       Bscl*B,						&   !11,12,13
       vscl*vtot_non,					&   !14 vtot_non
-      e2,							&   !15
-      e3,							&   !16
-      ek,							&   !17  
+      e2,						&   !15
+      e3,						&   !16
+      ek,						&   !17  
       gamma,						&   !18
-      Escl*Epar,						&   !19
+      Escl*Epar,					&   !19
       vscl*UE,						&   !20,21,22
       vscl*U,						&   !23
-      Vscl*DRDT!,						&   !24,25,26
-      !gyrofreq,gyroperiod,gyrorad				   !27,28,29
+      Vscl*DRDT!,					&   !24,25,26
+      !gyrofreq,gyroperiod,gyrorad			   !27,28,29
       CLOSE(55)
     ENDIF
     
@@ -471,6 +698,7 @@ UNDERFLOW=0
     T2=T
     USTART = U
     GAMMASTART = GAMMA
+    print*, 'help'
     RETURN 
    ENDIF
    
