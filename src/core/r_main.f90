@@ -325,7 +325,7 @@ SUBROUTINE JTMUcalc(mu,USTART,GAMMASTART, Ekin,alpha,RSTART,T1,T2)
  ue=cross(El,B)/dot(B,B)  !*0.5
  Etemp=Ekin
  
- print*, 'Etemp=', Ekin
+! print*, 'Etemp=', Ekin
  
  !need to check if 1/2mUE^2 is covered by the initial KE
  IF (Ekin.lt.0.5d0*m*vscl*vscl*dot(ue,ue)*6.242e18) THEN
@@ -359,7 +359,7 @@ SUBROUTINE JTMUcalc(mu,USTART,GAMMASTART, Ekin,alpha,RSTART,T1,T2)
  Ustart=gamma*vtot*cos(alpha)
  
  
- print*, vtot*cos(alpha)
+ !print*, vtot*cos(alpha)
  
  mu=0.5_num*m*vtot*vtot*sin(alpha)*sin(alpha)*gamma*gamma/modB		
  
