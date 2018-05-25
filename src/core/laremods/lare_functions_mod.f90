@@ -582,7 +582,9 @@ FUNCTION T2d(R,T)
     T2d(34)=(Ext(2)-Ext(1))*odgt(l(3))	! as we have multiple snapshots, we can calculate time derivs finally!
     T2d(35)=(Eyt(2)-Eyt(1))*odgt(l(3))
     T2d(36)=(Ezt(2)-Ezt(1))*odgt(l(3))
-
+    
+    DEALLOCATE(dgt,odgt)
+   
    ELSE
    
     T2d(1)=bxt(1)
@@ -621,7 +623,7 @@ FUNCTION T2d(R,T)
    DEALLOCATE(bxt, byt, bzt,vxt, vyt, vzt, Ext, Eyt, Ezt, jxt, jyt, jzt)
    DEALLOCATE(dbxdxt,dbxdyt,dbydxt,dbydyt,dbzdxt,dbzdyt)
    DEALLOCATE(dExdxt,dExdyt,dEydxt,dEydyt,dEzdxt,dEzdyt)
-   DEALLOCATE(dgt,odgt)
+   !DEALLOCATE(dgt,odgt)
 
    RETURN
 
@@ -1254,7 +1256,7 @@ FUNCTION T3d(R,T)
     T3d(34)=(Ext(2)-Ext(1))*odgt(l(4))	! as we have multiple snapshots, we can calculate time derivs finally!
     T3d(35)=(Eyt(2)-Eyt(1))*odgt(l(4))
     T3d(36)=(Ezt(2)-Ezt(1))*odgt(l(4))
-
+    DEALLOCATE(dgt,odgt)
    ELSE
    
     T3d(1)=bxt(1)
@@ -1293,7 +1295,7 @@ FUNCTION T3d(R,T)
    DEALLOCATE(bxt, byt, bzt,vxt, vyt, vzt, Ext, Eyt, Ezt, jxt, jyt, jzt)
    DEALLOCATE(dbxdxt,dbxdyt,dbxdzt,dbydxt,dbydyt,dbydzt,dbzdxt,dbzdyt,dbzdzt)
    DEALLOCATE(dExdxt,dExdyt,dExdzt,dEydxt,dEydyt,dEydzt,dEzdxt,dEzdyt,dEzdzt)
-   DEALLOCATE(dgt,odgt)
+   !DEALLOCATE(dgt,odgt)
    
    RETURN
 
