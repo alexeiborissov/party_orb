@@ -265,8 +265,8 @@ CONTAINS
   
    WRITE(*,*)  '..now loading in Lare variables..'
    frame=1
+   IF (nframes.GE.1) THEN print*, 'looping'
    DO WHILE (frame.LE.(nframes))  
-    print*, 'looping'
     IF (ce) THEN
       INQUIRE(file=TRIM(cfdloc),exist=ce2)
       IF (ce2) THEN

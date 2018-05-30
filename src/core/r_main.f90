@@ -19,7 +19,7 @@ IMPLICIT NONE
  INTEGER :: pnmax, fcount
  INTEGER, DIMENSION(3) :: pos_no_r
  
- LOGICAL :: file_exists
+ LOGICAL :: file_exists, reset_flag
  
  REAL(num), DIMENSION(3) :: gds, lbox
  REAL(num), DIMENSION(NKEEPMAX) :: TT 
@@ -35,6 +35,7 @@ IMPLICIT NONE
  l2dflag=.FALSE.
  analyticalflag=.FALSE.
  NLFFflag=.FALSE.
+ !reset_flag=.FALSE.
 
  ! read in input parameters
  CALL read_param
@@ -193,10 +194,9 @@ IMPLICIT NONE
   maxwellEfirst=.TRUE.
   DO WHILE (pos_no_x .LE. RSTEPS(1)-1)
    DO WHILE (pos_no_y .LE. RSTEPS(2)-1)
-    DO WHILE ((pos_no_z .LE. RSTEPS(3)-1).AND.(pn .LE. pnmax))
+    1066 DO WHILE ((pos_no_z .LE. RSTEPS(3)-1).AND.(pn .LE. pnmax))
      DO pos_no_alpha = 2, AlphaSteps,1
       DO pos_no_ekin = 1, EkinSteps,1
-
        pos_no_r = (/pos_no_x,pos_no_y, pos_no_z/)
        !print*, tempr
        IF (RANDOMISE_R) THEN
@@ -211,14 +211,10 @@ IMPLICIT NONE
        pn= pn + 1
        !call progress(pn,nparticles) ! generate the progress bar.
        
-       IF (JTo4) write(49,"(I4)",advance='no'), pn	   
+       !IF (JTo4) write(49,"(I4)",advance='no'), pn	   
 	   
-       !IF (nparticles.gt.1000) THEN 
-        1000 format ("particle no. ",i7,"/",i7, ", R=(",ES9.2,",",ES9.2,",",ES9.2,")")
-       !ELSE     
-       ! 1000 format ("particle no. ",i3,"/",i3, ", R=(",ES9.2,",",ES9.2,",",ES9.2,")")
-       !ENDIF    
-	print 1000, pn,nparticles, RSTART
+       1000 format ("particle no. ",i7,"/",i7, ", R=(",ES9.2,",",ES9.2,",",ES9.2,")") 
+       print 1000, pn,nparticles, RSTART
 
        T1=T1Keep
        T2=T2Keep
@@ -251,7 +247,29 @@ IMPLICIT NONE
        T2=T2/Tscl
        
        ! WARNING passing in dimensional Ekin into mu calc
-       CALL JTMUcalc(MU,USTART,GAMMASTART,Ekin,Alpha,RSTART,T1,T2)
+       CALL JTMUcalc(MU,USTART,GAMMASTART,Ekin,Alpha,RSTART,T1,T2, reset_flag)
+       
+       !print*, pos_no_r
+       
+       IF (reset_flag) THEN 
+        ! very small initial B detected
+        IF (RANDOMISE_R) THEN 
+	 ! if positions are random, then go back and generate a new random position	 
+	 print*, 'initial |B| is too small: trying a new position'
+	 pn=pn-1
+	 !pos_no_z=pos_no_z-1
+	 !CYCLE
+	 GO TO 1066
+	 ! remember, random variable seed based on system clock, so will take a second or two to generate a new seed!
+	ELSE   
+         ! if the position is SPECIFIED then skip this one	 
+	 print*, 'initial |B| is too small: skipping this particle'
+         CYCLE
+	ENDIF
+       ENDIF
+       
+       IF (JTo4) write(49,"(I4)",advance='no'), pn
+       
        USTARTKEEP=USTART  
        GAMMASTARTKEEP=GAMMASTART       
        Ekin = Ekin*AQ/Ekscl        
@@ -297,7 +315,7 @@ IMPLICIT NONE
 !------------------------------------------------------------------------------!
  Contains
 !------------------------------------------------------------------------------!
-SUBROUTINE JTMUcalc(mu,USTART,GAMMASTART, Ekin,alpha,RSTART,T1,T2)
+SUBROUTINE JTMUcalc(mu,USTART,GAMMASTART, Ekin,alpha,RSTART,T1,T2, resetflag)
 
   REAL(num), DIMENSION(3),INTENT(IN) :: RSTART
   REAL(num), INTENT(IN) :: T1,T2, Ekin, Alpha				! 
@@ -305,6 +323,9 @@ SUBROUTINE JTMUcalc(mu,USTART,GAMMASTART, Ekin,alpha,RSTART,T1,T2)
   REAL(num), DIMENSION(3) :: B,El,a2,a3,a4,a5,a6,a7,a8,a9,a10,ue, RT
   !REAL(num) :: magB,vtot,vperp, vparstart!,Erest
   REAL(num) :: modB,vtot, gamma, Etemp
+  LOGICAL, INTENT(OUT)   :: resetflag
+ 
+ resetflag=.FALSE.
  
  !calculate B, E, V at this point/time:
  CALL FIELDS(RSTART,T1,El,B,a2,a3,a4,a5,a6,a7,a8,a9,a10,T1,T2)
@@ -313,6 +334,10 @@ SUBROUTINE JTMUcalc(mu,USTART,GAMMASTART, Ekin,alpha,RSTART,T1,T2)
  modB=B(1)*B(1)+B(2)*B(2)+B(3)*B(3)
  modB=sqrt(modB)
  RT=RSTART
+
+ IF (modb.le.lowbthresh) THEN 
+  resetflag=.TRUE.
+ ENDIF
 
  !print*, 'RT=', RT
  !PRINT*, 'B=', B
@@ -372,7 +397,7 @@ SUBROUTINE JTMUcalc(mu,USTART,GAMMASTART, Ekin,alpha,RSTART,T1,T2)
  !PRINT*, 'modB=', modB
   !calculate mu
   !mu=0.5_num*vperp*vperp/magB*gammastart*gammastart
- 
+ !STOP
  ! WRITE (19,*) RStart,T1,Ekin,Alpha, mu*magB, 0.5_num*vparstart*vparstart
   !WRITE (19,*) vtot,vperp,vparstart,El,B,magB,mu
 

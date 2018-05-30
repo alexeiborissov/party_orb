@@ -26,19 +26,27 @@ SUBROUTINE LAREFIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf)
  !LOGICAL				:: fxflag=.FALSE., fyflag=.FALSE., fzflag=.FALSE.
  !LOGICAL, INTENT(OUT)			:: ERR=.FALSE.
 
-  IF (((R(1).lt.myx(4)).and.(R(1).ge.myx(nx-3))).OR.((R(2).lt.myy(4)).and.(R(2).ge.myy(ny-3)))) THEN
+  !IF (((R(1).lt.myx(4)).and.(R(1).ge.myx(nx-3))).OR.((R(2).lt.myy(4)).and.(R(2).ge.myy(ny-3)))) THEN
+  
+  ! PRINT*, 'LF', R
+  ! PRINT*, 'LF', myx(4), myx(nx-4), myy(4), myy(ny-4), myz(4), myz(nz-4)
+  
+  IF (((R(1).lt.myx(4)).OR.(R(1).ge.myx(nx-4))).OR.((R(2).lt.myy(4)).OR.(R(2).ge.myy(ny-4)))) THEN
    print*, 'returning as out of bounds'	! this should not get triggered but hey.
-   RETURN
+   iquants=-999.99_num
   ENDIF
   
   IF ((str_cmp(FMOD, "L3D")).OR.(str_cmp(FMOD, "l3d"))) THEN
-   IF ((R(3).lt.myz(4)).and.(R(3).ge.myz(nz-3))) THEN
+   IF ((R(3).lt.myz(4)).OR.(R(3).ge.myz(nz-4))) THEN
     PRINT*, 'outside z bounds, returning'
-    RETURN
+    iquants=-999.99_num
+   ELSE 
+    iquants=T3d(R,T)
    ENDIF
-   iquants=T3d(R,T)
-  ELSE
+  ELSE IF ((str_cmp(FMOD, "L2D")).OR.(str_cmp(FMOD, "l2d"))) THEN
    iquants=T2d(R,T)
+  ELSE 
+    print*, 'are you sure about this?' 
   ENDIF
   ! compare array against itself for NANs         
   IF (ALL(iquants.eq.iquants)) THEN

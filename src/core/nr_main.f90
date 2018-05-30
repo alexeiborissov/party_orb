@@ -19,7 +19,7 @@ IMPLICIT NONE
  INTEGER :: pnmax, fcount
  INTEGER, DIMENSION(3) :: pos_no_r
  
- LOGICAL :: file_exists
+ LOGICAL :: file_exists, reset_flag
  
  REAL(num), DIMENSION(3) :: gds, lbox
  REAL(num), DIMENSION(NKEEPMAX) :: TT 
@@ -191,7 +191,7 @@ IMPLICIT NONE
   maxwellEfirst=.TRUE.
   DO WHILE (pos_no_x .LE. RSTEPS(1)-1)
    DO WHILE (pos_no_y .LE. RSTEPS(2)-1)
-    DO WHILE ((pos_no_z .LE. RSTEPS(3)-1).AND.(pn .LE. pnmax))
+    1066 DO WHILE ((pos_no_z .LE. RSTEPS(3)-1).AND.(pn .LE. pnmax))
      DO pos_no_alpha = 2, AlphaSteps,1
       DO pos_no_ekin = 1, EkinSteps,1
 
@@ -207,9 +207,7 @@ IMPLICIT NONE
        ENDIF
        pn= pn + 1
        
-       !call progress(pn,nparticles) ! generate the progress bar.
-       
-       IF (JTo4) write(48,"(I4)",advance='no'), pn	   
+       !call progress(pn,nparticles) ! generate the progress bar.   
            
        IF (nparticles.gt.1000) THEN 
         print 1111, pn,nparticles, RSTART     
@@ -237,10 +235,10 @@ IMPLICIT NONE
         Ekin=EKinLow+(EKinHigh-EKinLow)*pos_no_ekin/(EkinSteps*1.0d0)
        ENDIF
 
-   !pos_no_ekin starts from 0, if started from 1 then (stepekin-1)
- 
-   !alpha = pi/(no of steps+1) if fullangle is 1 (ie, steps from >=0 to >Pi (but not including Pi))
-   !alpha = pi/2/(no of steps) if fullangle is 0 (steps from 0 to Pi/2 inclusive)
+       !pos_no_ekin starts from 0, if started from 1 then (stepekin-1)
+    
+       !alpha = pi/(no of steps+1) if fullangle is 1 (ie, steps from >=0 to >Pi (but not including Pi))
+       !alpha = pi/2/(no of steps) if fullangle is 0 (steps from 0 to Pi/2 inclusive)
   
        RSTARTKEEP=RSTART
        !PRINT*,'Normalising:'
@@ -255,9 +253,29 @@ IMPLICIT NONE
        !PRINT*,'RSTART=',RSTART
        !PRINT*, '***********************************************************'
        
+       !print*, pos_no_r
+       
        !call sub to calculate mu from Ekinetic (initial), vpar (to get Epar),
        !initial position and initial time.
-       CALL CALC2_MU(MU,VPARSTART,Ekin,Alpha,RSTART,T1,T2)		! calculates vparstart
+       CALL CALC2_MU(MU,VPARSTART,Ekin,Alpha,RSTART,T1,T2, reset_flag)		! calculates vparstart
+       
+       IF (reset_flag) THEN 
+        ! very small initial B detected
+        IF (RANDOMISE_R) THEN 
+	 ! if positions are random, then go back and generate a new random position	 
+	 print*, 'initial |B| is too small: trying a new position'
+	 pn=pn-1
+	 GO TO 1066
+	 !CYCLE
+	 ! remember, random variable seed based on system clock, so will take a second or two to generate a new seed!
+	ELSE   
+         ! if the position is SPECIFIED then skip this one	 
+	 print*, 'initial |B| is too small: skipping this particle'
+         CYCLE
+	ENDIF
+       ENDIF
+       
+       IF (JTo4) write(48,"(I4)",advance='no'), pn	
        
        Ekin = Ekin*AQ/Ekscl !convert energy from ev to joules (inc. in non-rel)
        VPARSTARTKEEP=VPARSTART
@@ -308,7 +326,7 @@ IF ((str_cmp(FMOD, "LARE")).OR.(str_cmp(FMOD, "lare"))) THEN	!forget arrays at e
 !------------------------------------------------------------------------------!
  Contains
 !------------------------------------------------------------------------------!
-SUBROUTINE CALC2_MU(mu,vparstart,Ekin,alpha,RSTART,T1,T2)
+SUBROUTINE CALC2_MU(mu,vparstart,Ekin,alpha,RSTART,T1,T2, resetflag)
 
   REAL(num), DIMENSION(3),INTENT(IN) :: RSTART
   REAL(num), INTENT(IN) :: T1,T2, Alpha
@@ -316,14 +334,19 @@ SUBROUTINE CALC2_MU(mu,vparstart,Ekin,alpha,RSTART,T1,T2)
   REAL(num), INTENT(OUT) :: mu, vparstart
   REAL(num), DIMENSION(3) :: B,El,a2,a3,a4,a5,a6,a7,a8,a9,a10,ue
   REAL(num) :: magB,vtot,vperp,Erest, Etemp
- 
+  LOGICAL, INTENT(OUT)   :: resetflag
+   
  !calculate B, E, V at this point/time:
  CALL FIELDS(RSTART,T1,El,B,a2,a3,a4,a5,a6,a7,a8,a9,a10,T1,T2)
 
  !calculate magnitude of B
  magB=B(1)*B(1)+B(2)*B(2)+B(3)*B(3)
  magB=sqrt(magB)
-
+ 
+ IF (magb.le.lowbthresh) THEN 
+  resetflag=.TRUE.
+ ENDIF
+ 
  Erest = (M*c*c)*oneuponAQ
  ! E X B drift
  ue=cross(El,B)/dot(B,B)  !*0.5

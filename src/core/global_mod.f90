@@ -10,10 +10,10 @@ MODULE global
  SAVE 
   
 !########################################################################## 
- CHARACTER(Len = 4), PARAMETER	:: FMOD='nlff' ! SWITCH BETWEEN FIELDS: "l3d","l2d", "SEP","CMT","test","bor", "NLFF"
- INTEGER, PARAMETER		:: mysnap=0000	!  no. of ****.cfd/****.sdf file (if "l3d")
+ CHARACTER(Len = 4), PARAMETER	:: FMOD='l3d' ! SWITCH BETWEEN FIELDS: "l3d","l2d", "SEP","CMT","test","bor", "NLFF"
+ INTEGER, PARAMETER		:: mysnap=0300	!  no. of ****.cfd/****.sdf file (if "l3d")
  INTEGER, PARAMETER		:: nframes=1	! no. of frames
- CHARACTER(Len = 40)		:: sloc='../../../data/'
+ CHARACTER(Len = 40)		:: sloc='../../laredata/'
 
 !##########################################################################
 ! now some stuff required to plug in lare data 
@@ -45,6 +45,7 @@ MODULE global
  INTEGER 			:: EKinSteps, AlphaSteps
  LOGICAL			:: p_restart=.FALSE., p_stop=.FALSE. 		! are we starting or stopping midway through the arrays?
  LOGICAL			:: RANDOMISE_R, RANDOMISE_A, RANDOMISE_E	! switches for randomising position, angle and energy
+ LOGICAL			:: oob
 
 ! boundary condition choices
  CHARACTER(Len = 5), DIMENSION(3), PARAMETER 	:: bcchoices=(/'trans','partr','fullr'/)
@@ -73,7 +74,7 @@ MODULE global
 
 ! NORMALISING SCALES 
  REAL(num), PARAMETER	:: Lscl = 1e6_num     		! 10 Mega meters (1e7)
- REAL(num), PARAMETER	:: Bscl = 0.01_num		! 100 Gauss 	 (0.01)
+ REAL(num), PARAMETER	:: Bscl = 0.001_num		! 100 Gauss 	 (0.01)
  !REAL(num), PARAMETER	:: Bscl = 1.0_num 		! 100 Gauss 	 (0.01)
  !REAL(num), PARAMETER	:: Escl = 1e3			! 10V/cm	 (1e3)
  !REAL(num), PARAMETER	:: Tscl = Lscl*Bscl/Escl        ! 100s	
@@ -88,6 +89,7 @@ MODULE global
  REAL(num), PARAMETER	:: pscl=bscl*bscl/mu0_si			! Lare normalisation of pressure
  REAL(num), PARAMETER	:: rhoscl=bscl*bscl/mu0_si/vscl/vscl		! Lare normalisation of mass density
  REAL(num), PARAMETER	:: tempscl=pscl/rhoscl/Mp*kb			! Lare normalisation of temperature
+ 
 
  LOGICAL, PARAMETER	:: lare_norm=.TRUE.	! TRUE if Lare output IS NORMALISED, else FALSE (so normalise varibles and derivs).
  						! (usually true, unless someone has messed with control.f90)
@@ -124,15 +126,17 @@ MODULE global
  REAL(num), PARAMETER	:: b1=rat1*b0, a=rat2*z0, ll=rat3*z0, oa=1.0_num/a, oll=1.0_num/ll 
  REAL(num), PARAMETER	:: xc=0.0_num, yc=0.0_num, zc=0.0_num		! center of flux ring
 
-
+ REAL(num), PARAMETER	:: lowbthresh=1e-10_num
  ! Lare field parameters
  ! (required by LARE modules)
 
  !REAL(num), DIMENSION(2), PARAMETER	:: xe=(/0.1_num,99.9_num/),ye=(/-0.1_num,99.9_num/),ze=(/-19.5_num,79.5_num/)
  !REAL(num), DIMENSION(2), PARAMETER	:: xe=(/-0.9_num,0.9_num/),ye=(/-0.9_num,0.9_num/),ze=(/-100.00_num,100.0_num/)
- REAL(num), DIMENSION(2), PARAMETER	:: ze=(/-9.5_num,9.5_num/),ye=(/-1.8_num,1.8_num/),xe=(/-1.8_num,3.8_num/)
+ !REAL(num), DIMENSION(2), PARAMETER	:: ze=(/-9.5_num,9.5_num/),ye=(/-1.8_num,1.8_num/),xe=(/-1.8_num,3.8_num/)
+ REAL(num), DIMENSION(2), PARAMETER	:: ze=(/0.25_num,19.75_num/),ye=(/-7.5_num,7.5_num/),xe=(/-7.5_num,7.5_num/)
  !REAL(num), PARAMETER			:: eta=0.001_num, jcrit=25.0_num
- REAL(num), PARAMETER			:: eta=0.00_num, jcrit=0.0_num, rwidth=0.05_num, etabkg=0.00_num
+ REAL(num), PARAMETER			:: eta=0.001_num, jcrit=0.8_num, rwidth=0.05_num, etabkg=0.00001_num
+ !REAL(num), PARAMETER			:: eta=0.001_num, jcrit=0.8_num, rwidth=0.05_num, etabkg=0.00001_num
  !REAL(num), PARAMETER			:: eta=0.001_num, jcrit=20.0_num, rwidth=0.5_num
 
  CHARACTER(Len = 5), PARAMETER 	:: dloc='Data/'
@@ -142,7 +146,8 @@ MODULE global
  !INTEGER, PARAMETER				:: nx_global=64, ny_global=64, nz_global=64		! julie's lare3d cfd config
  !INTEGER, PARAMETER				:: nx_global=120, ny_global=120, nz_global=480		! alan's lare3d sdf config
  !INTEGER, PARAMETER				:: nx_global=256, ny_global=256, nz_global=512		! alan's lare3d sdf config twoloops
- INTEGER, PARAMETER				:: nx_global=256, ny_global=256, nz_global=256		! Steph/Duncan NLFFF resolution
+ !INTEGER, PARAMETER				:: nx_global=256, ny_global=256, nz_global=256		! Steph/Duncan NLFFF resolution
+ INTEGER, PARAMETER				:: nx_global=512, ny_global=512, nz_global=512		! alan etab-5 resolution
  INTEGER, PARAMETER 				:: data_dir_max_length = 64
  INTEGER 					:: nx, ny, nz	
  INTEGER, DIMENSION(:), ALLOCATABLE		:: dims

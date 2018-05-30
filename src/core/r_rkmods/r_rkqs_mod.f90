@@ -46,7 +46,7 @@ MODULE M_rkqsR
  DO 
   CALL RKCK(R,DRDT,U,DUDT,GAMMA,DGAMMADT,T,H,MU,RTEMP,UTEMP,GAMMATEMP, RERR,T1,T2)
   !print 669, R, DRDT
-  ! 669 format ('R3=[',ES9.2,',',ES9.2,',',ES9.2,'], DRDT=[',ES9.2,',',ES9.2,',',ES9.2,']')
+   !669 format ('R3=[',ES9.2,',',ES9.2,',',ES9.2,'], DRDT=[',ES9.2,',',ES9.2,',',ES9.2,']')
   ERRMAX=maxval(abs(RERR(:)/RSCAL(:)))/EPS 
   !WRITE(*,1001)"time:",Tscl*(T-t1)
   !WRITE(*,1004)"RERR:",RERR

@@ -142,8 +142,8 @@ UNDERFLOW=0
    CALL DERIVS (T, R, DRDT, U, DUDT,GAMMA,DGAMMADT,MU, T1, T2)
    vpar=U/GAMMA
    ek=efct*(gamma-1)*m*c*c
-   !print*, NSTP,dudt
-   
+   !print*, NSTP
+
    
    bb=B/sqrt(dot(B,B))
    UE=cross(E,B)/dot(B,B)
@@ -152,7 +152,6 @@ UNDERFLOW=0
    MODB = SQRT(B(1)*B(1) + B(2)*B(2) + B(3)*B(3))		! |B|
    oMODB=1.0_num/MODB
 
-   
    e1=efct*0.5_num*M*Vscl*Vpar*Vscl*Vpar
    e2=efct*M*Vscl*Vscl*MU*sqrt(dot(B,B))*gamma*gamma
    e3=efct*0.5_num*M*dot(UE,UE)*vscl*vscl
@@ -194,11 +193,17 @@ UNDERFLOW=0
     H=T2-T  			 !if stepsize can overshoot, decrease
    END IF 
 
+
+   !print*, DRDT, H
    !print 668, R
    !668 format ('R2=[',ES9.2,',',ES9.2,',',ES9.2,']')
    RLAST=R
-
+   !print 680, R
+   !680 format ('R4=[',ES9.2,',',ES9.2,',',ES9.2,']')
+   
    CALL RKQS(R,DRDT,U,DUDT,GAMMA,DGAMMADT,T,H,MU,EPS,RSCAL,HDID,HNEXT,T1,T2, UNDERFLOW)	! T modified here.
+   
+   !print*, 'return from RKQS?'
    
    !print 680, R
    !680 format ('R4=[',ES9.2,',',ES9.2,',',ES9.2,']')
@@ -258,7 +263,7 @@ UNDERFLOW=0
 !			      .AND.(SUM(DBDT).EQ.0.0_num).AND.(SUM(DEDT).EQ.0.0_num) &
     			      .AND.(SUM(Vf).EQ.0.0_num)) THEN	! not technically beyond bourdin range
     print *, 'special box extent exit'
-    IF (JTo4) write(49,*), 'B'
+    IF (JTo4) write(49,*), 'X'
     DO I = 1,3
       RSTART(I)=R(I)
     ENDDO
@@ -349,7 +354,7 @@ UNDERFLOW=0
         GO TO 101 ! now actually head back and select case we want!
        CASE(1)
         print *, 'box extent exit'
-        IF (JTo4) write(49,*), 'B'
+        IF (JTo4) write(49,*), 'X'
         DO I = 1,3
          RSTART(I)=R(I)
         ENDDO
@@ -367,7 +372,7 @@ UNDERFLOW=0
         ELSE
          print *, 'box extent exit'
          !print *, sqrt(MU*sqrt(dot(B,B))/gamma/gamma)/sqrt(U*U/gamma/gamma)
-         IF (JTo4) write(49,*), 'B'
+         IF (JTo4) write(49,*), 'X'
          DO I = 1,3
           RSTART(I)=R(I)
          ENDDO
@@ -400,7 +405,7 @@ UNDERFLOW=0
         GO TO 102
        CASE(1)
         print *, 'box extent exit'
-        IF (JTo4) write(49,*), 'B'
+        IF (JTo4) write(49,*), 'X'
         DO I = 1,3
          RSTART(I)=R(I)
         ENDDO
@@ -417,7 +422,7 @@ UNDERFLOW=0
          CYCLE
         ELSE
          print *, 'box extent exit'
-         IF (JTo4) write(49,*), 'B'
+         IF (JTo4) write(49,*), 'X'
          DO I = 1,3
           RSTART(I)=R(I)
          ENDDO
@@ -450,7 +455,7 @@ UNDERFLOW=0
         GO TO 103 ! now actually head back and select case we want!
        CASE(1)
         print *, 'box extent exit'
-        IF (JTo4) write(49,*), 'B'
+        IF (JTo4) write(49,*), 'X'
         DO I = 1,3
          RSTART(I)=R(I)
         ENDDO
@@ -468,7 +473,7 @@ UNDERFLOW=0
         ELSE
          print *, 'box extent exit'
          !print *, sqrt(MU*sqrt(dot(B,B))/gamma/gamma)/sqrt(U*U/gamma/gamma)
-         IF (JTo4) write(49,*), 'B'
+         IF (JTo4) write(49,*), 'X'
          DO I = 1,3
           RSTART(I)=R(I)
          ENDDO
@@ -501,7 +506,7 @@ UNDERFLOW=0
         GO TO 104
        CASE(1)
         print *, 'box extent exit'
-        IF (JTo4) write(49,*), 'B'
+        IF (JTo4) write(49,*), 'X'
         DO I = 1,3
          RSTART(I)=R(I)
         ENDDO
@@ -518,7 +523,7 @@ UNDERFLOW=0
          CYCLE
         ELSE
          print *, 'box extent exit'
-         IF (JTo4) write(49,*), 'B'
+         IF (JTo4) write(49,*), 'X'
          DO I = 1,3
           RSTART(I)=R(I)
          ENDDO
@@ -551,7 +556,7 @@ UNDERFLOW=0
         GO TO 105 
        CASE(1)
         print *, 'box extent exit'
-        IF (JTo4) write(49,*), 'B'
+        IF (JTo4) write(49,*), 'X'
         DO I = 1,3
          RSTART(I)=R(I)
         ENDDO
@@ -569,7 +574,7 @@ UNDERFLOW=0
         ELSE
 	 print *, sqrt(MU*sqrt(dot(B,B))/gamma/gamma)/sqrt(U*U/gamma/gamma)
          print *, 'box extent exit'
-         IF (JTo4) write(49,*), 'B'
+         IF (JTo4) write(49,*), 'X'
          DO I = 1,3
           RSTART(I)=R(I)
          ENDDO
@@ -602,7 +607,7 @@ UNDERFLOW=0
         GO TO 106
        CASE(1)
         print *, 'box extent exit'
-        IF (JTo4) write(49,*), 'B'
+        IF (JTo4) write(49,*), 'X'
         DO I = 1,3
          RSTART(I)=R(I)
         ENDDO
@@ -619,7 +624,7 @@ UNDERFLOW=0
          CYCLE
         ELSE
          print *, 'box extent exit'
-         IF (JTo4) write(49,*), 'B'
+         IF (JTo4) write(49,*), 'X'
          DO I = 1,3
           RSTART(I)=R(I)
          ENDDO
@@ -637,6 +642,32 @@ UNDERFLOW=0
        END SELECT
     ENDIF      
    ENDIF  
+   
+   !exit the calculation if |B| decreases beyond some threshold - remember rg->infinity as b->0
+   IF (modb.le.lowbthresh) THEN 
+    print *, 'modb is too small'
+    IF (JTo4) write(49,*), 'B'
+    DO I = 1,3
+      RSTART(I)=R(I)
+    ENDDO
+    T2 = T
+    USTART = U
+    GAMMASTART = GAMMA
+    RETURN
+   ENDIF   
+   
+   !exit the calculation if the gyroradius approaches the lengthscale of the simulations
+   IF (gyrorad.ge.lscl) THEN 
+    print *, 'gyroradius is as large as imposed lengthscale!'
+    IF (JTo4) write(49,*), 'G'
+    DO I = 1,3
+      RSTART(I)=R(I)
+    ENDDO
+    T2 = T
+    USTART = U
+    GAMMASTART = GAMMA
+    RETURN
+   ENDIF
    
    IF ((abs(H).lt.EPS).AND.(abs(HNEXT).lt.EPS)) THEN ! both this and the next step are unbelievably small so quit before we get stuck!
     print *, 'timestep shrink'

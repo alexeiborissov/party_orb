@@ -198,6 +198,10 @@ SUBROUTINE DERIVS (T, R, DRDT, U, DUDT,GAMMA, DGAMMADT,MU, T1, T2)
  DMODBDS=dot(B,B(1)*DBDX+B(2)*DBDY+B(3)*DBDZ)*oMODB*oMODB
 
  GRADDRIFT = CROSS(B,GRADB)*oMODB*oMODB*ofacsq
+ 
+! PRINT*, 'DER: B', B
+! PRINT*, 'DER: GRADB', GRADB  
+! PRINT*, 'DER: GRADDRIFT', GRADDRIFT 
 
  DlittleBDS = (B(1)*DlittleBDX + B(2)*DlittleBDY + B(3)*DlittleBDZ)*oMODB
  
@@ -238,7 +242,8 @@ SUBROUTINE DERIVS (T, R, DRDT, U, DUDT,GAMMA, DGAMMADT,MU, T1, T2)
   RELDRIFT1=U*DlittleBDT+gamma*DVEDT+vscl*vscl/c/c*MU/gamma*VE*DmodBDT*fac
   !RELDRIFT1=MU/gamma*GRADDRIFT+U*DlittleBDT+gamma*DVEDT+vscl*vscl/c/c*mu/gamma*VE*DmodBDT				!(assuming eperp<<B)
   RELDRIFT2=U/gamma*EPAR*VE
- 
+  
+  !PRINT*, 'DER: mu/gamma', MU/gamma
   d1=MU/gamma*GRADDRIFT
   d2=MU/gamma*vscl*vscl/c/c*CROSS(B,VE)*omodB*omodB*ofacsq*DmodBDT
   d3=U*CROSS(B,DlittleBDT)*omodB*omodB*ofacsq
@@ -246,12 +251,22 @@ SUBROUTINE DERIVS (T, R, DRDT, U, DUDT,GAMMA, DGAMMADT,MU, T1, T2)
   d5=Epar*U/gamma*vscl*vscl/c/c*CROSS(B,VE)*omodB*omodB*ofacsq
   
   
-   DRperpDT= VE + oneuponOmscl/tscl*(d1+d2+d3+d4)+d5									! THRELFALL ET AL 2015
-
+   DRperpDT= VE + oneuponOmscl/tscl*(d1+d2+d3+d4)+d5      
+  ! PRINT*, 'DER: d1', d1   
+   !PRINT*, 'DER: d2', d2   
+   !PRINT*, 'DER: d3', d3   
+   !PRINT*, 'DER: d4', d4
+   !PRINT*, 'DER: oneuponOmscl/tscl*(d1+d2+d3+d4)', oneuponOmscl/tscl*(d1+d2+d3+d4)									
+   !PRINT*, 'DER: d5', d5
+   !PRINT*, 'DER: oneuponOmscl/tscl*(d1+d2+d3+d4)+d5', oneuponOmscl/tscl*(d1+d2+d3+d4)+d5	
  
   !DRperpDT=VE + oneuponOmscl/tscl*(CROSS(B,RELDRIFT1)*oMODB*oMODB)+vscl*vscl/c/c*(CROSS(B,RELDRIFT2)*oMODB*oMODB)	!(assuming eperp<<B)
    DRDT =  DRperpDT + (U/gamma)*B*oMODB
+   
+  ! PRINT*, 'DER: DRperpDT', DRperpDT 
+  ! PRINT*, 'DER: (U/gamma)*B*oMODB', (U/gamma)*B*oMODB 
   
+ !  STOP
   !DgammaDT=Omscl*tscl*vscl*vscl/c/c*(dot(DRperpDT,E)+U/gamma*dot(B,E)*oMODB)+vscl*vscl/c/c*MU/gamma*DmodBDT*fac	!(assuming eperp<<B)  
   DgammaDT=Omscl*tscl*vscl*vscl/c/c*(dot(DRperpDT,E)+U/gamma*dot(B,E)*oMODB)+vscl*vscl/c/c*MU/gamma*DmodBDT*fac	!THRELFALL ET AL 2015
   

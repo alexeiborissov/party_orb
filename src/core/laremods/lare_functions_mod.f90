@@ -682,6 +682,12 @@ FUNCTION T3d(R,T)
       EXIT
     ENDIF
    ENDDO
+   
+   IF ((l(1).eq.(-nx)).or.(l(2).eq.(-ny)).or.(l(3).eq.(-nz))) THEN 
+    !LETS TRY TO CATCH THIS BEFORE NOW
+    !print*, R
+    T3d(1:36)=-999.0_num
+   ENDIF
 
 ! No guarantee we have more than one frame. IF we have one, this routine doesn't bother interpolating in time
   IF (nframes.gt.1) THEN

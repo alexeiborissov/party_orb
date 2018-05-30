@@ -208,7 +208,7 @@ UNDERFLOW=0
 !			      .AND.(SUM(DBDT).EQ.0.0_num).AND.(SUM(DEDT).EQ.0.0_num) &
     			      .AND.(SUM(Vf).EQ.0.0_num)) THEN	! not technically beyond bourdin range
     print *, 'special box extent exit'
-    IF (JTo4) write(49,*), 'B'
+    IF (JTo4) write(49,*), 'X'
     DO I = 1,3
       RSTART(I)=R(I)
     ENDDO
@@ -306,7 +306,7 @@ IF ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR.(NLFFflag).OR. &
         GO TO 101 ! now actually head back and select case we want!
        CASE(1)
         print *, 'box extent exit'
-        IF (JTo4) write(49,*), 'B'
+        IF (JTo4) write(49,*), 'X'
         DO I = 1,3
          RSTART(I)=R(I)
         ENDDO
@@ -322,7 +322,7 @@ IF ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR.(NLFFflag).OR. &
          CYCLE
         ELSE
          print *, 'box extent exit'
-         IF (JTo4) write(49,*), 'B'
+         IF (JTo4) write(49,*), 'X'
          DO I = 1,3
           RSTART(I)=R(I)
          ENDDO
@@ -354,7 +354,7 @@ IF ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR.(NLFFflag).OR. &
         GO TO 102 
        CASE(1)
         print *, 'box extent exit'
-        IF (JTo4) write(49,*), 'B'
+        IF (JTo4) write(49,*), 'X'
         DO I = 1,3
          RSTART(I)=R(I)
         ENDDO
@@ -370,7 +370,7 @@ IF ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR.(NLFFflag).OR. &
          CYCLE
         ELSE
          print *, 'box extent exit'
-         IF (JTo4) write(49,*), 'B'
+         IF (JTo4) write(49,*), 'X'
          DO I = 1,3
           RSTART(I)=R(I)
          ENDDO
@@ -402,7 +402,7 @@ IF ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR.(NLFFflag).OR. &
         GO TO 103 ! now actually head back and select case we want!
        CASE(1)
         print *, 'box extent exit'
-        IF (JTo4) write(49,*), 'B'
+        IF (JTo4) write(49,*), 'X'
         DO I = 1,3
          RSTART(I)=R(I)
         ENDDO
@@ -418,7 +418,7 @@ IF ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR.(NLFFflag).OR. &
          CYCLE
         ELSE
          print *, 'box extent exit'
-         IF (JTo4) write(49,*), 'B'
+         IF (JTo4) write(49,*), 'X'
          DO I = 1,3
           RSTART(I)=R(I)
          ENDDO
@@ -450,7 +450,7 @@ IF ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR.(NLFFflag).OR. &
         GO TO 104 
        CASE(1)
         print *, 'box extent exit'
-        IF (JTo4) write(49,*), 'B'
+        IF (JTo4) write(49,*), 'X'
         DO I = 1,3
          RSTART(I)=R(I)
         ENDDO
@@ -466,7 +466,7 @@ IF ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR.(NLFFflag).OR. &
          CYCLE
         ELSE
          print *, 'box extent exit'
-         IF (JTo4) write(49,*), 'B'
+         IF (JTo4) write(49,*), 'X'
          DO I = 1,3
           RSTART(I)=R(I)
          ENDDO
@@ -498,7 +498,7 @@ IF ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR.(NLFFflag).OR. &
         GO TO 105
        CASE(1)
         print *, 'box extent exit'
-        IF (JTo4) write(49,*), 'B'
+        IF (JTo4) write(49,*), 'X'
         DO I = 1,3
          RSTART(I)=R(I)
         ENDDO
@@ -514,7 +514,7 @@ IF ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR.(NLFFflag).OR. &
          CYCLE
         ELSE
          print *, 'box extent exit'
-         IF (JTo4) write(49,*), 'B'
+         IF (JTo4) write(49,*), 'X'
          DO I = 1,3
           RSTART(I)=R(I)
          ENDDO
@@ -547,7 +547,7 @@ IF ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR.(NLFFflag).OR. &
         GO TO 106
        CASE(1)
         print *, 'box extent exit'
-        IF (JTo4) write(49,*), 'B'
+        IF (JTo4) write(49,*), 'X'
         DO I = 1,3
          RSTART(I)=R(I)
         ENDDO
@@ -563,7 +563,7 @@ IF ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR.(NLFFflag).OR. &
          CYCLE
         ELSE
          print *, 'box extent exit'
-         IF (JTo4) write(49,*), 'B'
+         IF (JTo4) write(49,*), 'X'
          DO I = 1,3
           RSTART(I)=R(I)
          ENDDO
@@ -580,7 +580,31 @@ IF ((analyticalflag).OR.(l3dflag).OR.(l2dflag).OR.(NLFFflag).OR. &
        END SELECT
     ENDIF      
    ENDIF
-      
+   
+   !exit the calculation if |B| decreases beyond some threshold - remember rg->infinity as b->0
+   IF (modb.le.lowbthresh) THEN 
+    print *, 'modb is too small'
+    IF (JTo4) write(49,*), 'B'  
+    DO I = 1,3
+      RSTART(I)=R(I)
+    ENDDO
+    T2 = T
+    VPARSTART=VPAR
+    RETURN
+   ENDIF   
+   
+   !exit the calculation if the gyroradius approaches the lengthscale of the simulations
+   IF (gyrorad.ge.lscl) THEN 
+    print *, 'gyroradius is as large as imposed lengthscale!'
+    IF (JTo4) write(49,*), 'G' 
+    DO I = 1,3
+      RSTART(I)=R(I)
+    ENDDO
+    T2 = T
+    VPARSTART=VPAR
+    RETURN
+   ENDIF
+   
    IF ((H.lt.EPS).AND.(HNEXT.lt.EPS)) THEN ! both this and the next step are unbelievably small so quit before we get stuck!
     print *, 'timestep shrink'
     IF (JTo4) write(49,*), 'H'
