@@ -7,6 +7,7 @@ USE mpi_routines
 USE M_DRIVERR, ONLY: RKDRIVE
 USE bourdin_fields, ONLY: bour_ini, bour_fini
 USE NLFF_fields, ONLY: NLFFF_ini, NLFFF_fini
+USE MHDp_fields, ONLY: MHDp_ini, MHDp_fini
 USE M_products, ONLY: DOT, CROSS
 USE M_fields, ONLY: FIELDS
 USE gammadist_mod, ONLY: random_gamma
@@ -35,6 +36,7 @@ IMPLICIT NONE
  l2dflag=.FALSE.
  analyticalflag=.FALSE.
  NLFFflag=.FALSE.
+ MHDpflag=.FALSE.
  !reset_flag=.FALSE.
 
  ! read in input parameters
@@ -93,6 +95,14 @@ IMPLICIT NONE
    zee=(/myz(6),myz(nz-5)/)     
    print*, '----'
    PRINT*, '..evaluating particle array against NLFF grid..' 
+  ELSE IF ((str_cmp(FMOD, "MHDp")).OR.(str_cmp(FMOD, "mhdp"))) THEN
+   MHDpflag=.TRUE.
+   CALL MHDp_ini
+   xee=(/myx(6),myx(nx-5)/)
+   yee=(/myy(6),myy(ny-5)/)
+   zee=(/myz(6),myz(nz-5)/)     
+   print*, '----'
+   PRINT*, '..evaluating particle array against Paolos MHD grid..' 
   ELSE IF ((str_cmp(FMOD, "BOR")).OR.(str_cmp(FMOD, "bor"))) THEN
    bourdinflag=.TRUE.
    CALL bour_ini      ! read in data
@@ -309,9 +319,11 @@ IMPLICIT NONE
   CALL bour_fini      		! deallocate stuff, leave everything nice and tidy
  ENDIF 
  IF ((str_cmp(FMOD, "NLFF")).OR.(str_cmp(FMOD, "nlff"))) THEN
-  CALL NLFFF_fini      		! deallocate stuff, leave everything nice and tidy
+  CALL NLFFF_fini      		
  ENDIF 
-
+ IF ((str_cmp(FMOD, "MHDp")).OR.(str_cmp(FMOD, "mhdp"))) THEN
+  CALL MHDp_fini      		
+ ENDIF 
 !------------------------------------------------------------------------------!
  Contains
 !------------------------------------------------------------------------------!

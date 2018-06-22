@@ -1,4 +1,4 @@
-MODULE NLFF_fields
+MODULE MHDp_fields
   
   USE global
   USE M_products
@@ -7,29 +7,33 @@ MODULE NLFF_fields
   IMPLICIT NONE
 
   PRIVATE
-  PUBLIC :: NLFFF_ini, NLFFF_fini, NLFFFIELDS
+  PUBLIC :: MHDp_ini, MHDp_fini, MHDpFIELDS
 
   CONTAINS 
 !------------------------------------------------------------------------------!
-SUBROUTINE NLFFF_ini
+SUBROUTINE MHDp_ini
  
  INTEGER				:: ii
- CHARACTER(len=21)			:: nom='ar11437_run20_256'
- CHARACTER(len=21)			:: nomB='_ftn2idlB',nomJ='_ftn2idlJ'
- CHARACTER(len=21)			:: nomG='_ftn2idlgrid' 
+ CHARACTER(len=21)			:: nomB='cubeB_',nomJ='cubeJ_'
+ CHARACTER(len=21)			:: nomG='cubeG_', nometa='cubeETA_'
  REAL(num), DIMENSION(:), ALLOCATABLE  	:: griddat
- REAL(sp), DIMENSION(:, :, :), ALLOCATABLE  :: mydat
+ REAL(num), DIMENSION(:, :, :), ALLOCATABLE  :: mydat
    
- CHARACTER(LEN = 20+data_dir_max_length):: locB, locJ, gridloc
+ CHARACTER(LEN = 20+data_dir_max_length):: locB, locJ, gridloc, locETA
  LOGICAL				:: ONLY=.FALSE.
 
- gridloc=trim(adjustl(sloc))//trim(nom)//trim(nomG)//filetype3
- locB=trim(adjustl(sloc))//trim(nom)//trim(nomB)//filetype3
- locJ=trim(adjustl(sloc))//trim(nom)//trim(nomJ)//filetype3
+ frame=mysnap
+ WRITE (istring,fmt1) mysnap 			! convert first snapshot number to filename
+ locB=trim(adjustl(sloc))//trim(nomB)//trim(istring)//filetype3	
+ gridloc=trim(adjustl(sloc))//trim(nomG)//trim(istring)//filetype3	
+ locJ=trim(adjustl(sloc))//trim(nomJ)//trim(istring)//filetype3	 
+ locETA=trim(adjustl(sloc))//trim(nometa)//trim(istring)//filetype3	 
  
  nx=nx_global
  ny=ny_global
  nz=nz_global
+ 
+! print*, "[nx,ny,nz]=", nx, ny, nz
  
  ALLOCATE(griddat(1:nx+1))	
  ALLOCATE(myx(1:nx+1))
@@ -40,9 +44,12 @@ SUBROUTINE NLFFF_ini
  PRINT*, 'reading grid'
  OPEN(24,file=gridloc, access='stream', status='old')
  READ(24) griddat
- myx(1:nx+1)=griddat(1:nx+1)
+ ! print*, griddat(1), griddat(nx+1)
+  myx(1:nx+1)=griddat(1:nx+1)
  READ(24) griddat
  myy(1:ny+1)=griddat(1:ny+1)
+ DEALLOCATE(griddat)
+ ALLOCATE(griddat(1:nz+1))
  READ(24) griddat
  myz(1:nz+1)=griddat(1:nz+1)
  CLOSE(24)
@@ -55,32 +62,32 @@ SUBROUTINE NLFFF_ini
  print*, minval(myy),"->", maxval(myy)
  print*, minval(myz),"->", maxval(myz) 
  !NORMALISE NOW:
- myx=myx*1e6/lscl
- myy=myy*1e6/lscl
- myz=myz*1e6/lscl	!the values are already in megameters - *10^6 to be in meters, but divide by arbitrary new lengthscale
+ myx=myx/1e3/lscl
+ myy=myy/1e3/lscl
+ myz=myz/1e3/lscl	!paolo's lengths are in cm(!) - make them metres, then divide by new arbitrary lengthscale
  
 
 ! read fields
- write (*,"(a)",advance="no") 'reading NLFF field variables: '
+ write (*,"(a)",advance="no") 'reading Paolos MHD field variables: '
  ALLOCATE(bx(1:nx+1,1:ny+1,1:nz+1,1))
  ALLOCATE(mydat(1:nx+1,1:ny+1,1:nz+1))
  OPEN(25,file=locB, access='stream', status='old')
  READ(25) mydat
  !bx(1:nx+1,1:ny+1,1:nz+1,1)=mydat
  DO ii=1,nx+1
-  bx(ii,1:ny+1,1:nz+1,1)=stagger_bx(DBLE(mydat(ii,1:ny+1,1:nz+1)))*1E-4
+  bx(ii,1:ny+1,1:nz+1,1)=mydat(ii,1:ny+1,1:nz+1)*1E-4
  ENDDO  
  ALLOCATE(by(1:nx+1,1:ny+1,1:nz+1,1))
  READ(25) mydat
  !by(1:nx+1,1:ny+1,1:nz+1,1)=mydat
  DO ii=1,ny+1
-  by(1:nx+1,ii,1:nz+1,1)=stagger_by(DBLE(mydat(1:nx+1,ii,1:nz+1)))*1E-4
+  by(1:nx+1,ii,1:nz+1,1)=mydat(1:nx+1,ii,1:nz+1)*1E-4
  ENDDO  
  ALLOCATE(bz(1:nx+1,1:ny+1,1:nz+1,1)) 
  READ(25) mydat
  !bz(1:nx+1,1:ny+1,1:nz+1,1)=mydat
  DO ii=1,nz
-  bz(1:nx+1,1:ny+1,ii,1)=stagger_bz(DBLE(mydat(1:nx+1,1:ny+1,ii)))*1E-4
+  bz(1:nx+1,1:ny+1,ii,1)=mydat(1:nx+1,1:ny+1,ii)*1E-4
  ENDDO 
  CLOSE(25)
  
@@ -92,19 +99,30 @@ SUBROUTINE NLFFF_ini
  READ(26) mydat
  !jx(1:nx+1,1:ny+1,1:nz+1,1)=mydat
  DO ii=1,nx+1
-  jx(ii,1:ny+1,1:nz+1,1)=stagger_j(DBLE(mydat(ii,1:ny+1,1:nz+1)))*1E-4*1e-6
+  jx(ii,1:ny+1,1:nz+1,1)=mydat(ii,1:ny+1,1:nz+1)*1E-4*1e3
  ENDDO 
  READ(26) mydat
  !jy(1:nx+1,1:ny+1,1:nz+1,1)=mydat
  DO ii=1,ny+1
-  jy(1:nx+1,ii,1:nz+1,1)=stagger_j(DBLE(mydat(1:nx+1,ii,1:nz+1)))*1E-4*1e-6
+  jy(1:nx+1,ii,1:nz+1,1)=mydat(1:nx+1,ii,1:nz+1)*1E-4*1e3
  ENDDO 
  READ(26) mydat
  !jz(1:nx+1,1:ny+1,1:nz+1,1)=mydat
  DO ii=1,nz
-  jz(1:nx+1,1:ny+1,ii,1)=stagger_j(DBLE(mydat(1:nx+1,1:ny+1,ii)))*1E-4*1e-6
+  jz(1:nx+1,1:ny+1,ii,1)=mydat(1:nx+1,1:ny+1,ii)*1E-4*1e3
  ENDDO 
  CLOSE(26)
+ 
+ 
+! ALLOCATE(etavar(1:nx+1,1:ny+1,1:nz+1,1))
+! OPEN(27,file=locETA, access='stream', status='old')
+! READ(27) mydat
+! DO ii=1,nx+1
+!  etavar(ii,1:ny+1,1:nz+1,1)=mydat(ii,1:ny+1,1:nz+1)*1E-4	!convert on the fly to m^2/s
+! ENDDO
+! CLOSE(27)
+! etavar=etavar/Lscl/vscl	!normalise: we won't get chance again!
+ 
  
  IF (FIELDDUMP) THEN
    ! quick way to check the fields read in are the same as those seen in Lare
@@ -126,7 +144,10 @@ SUBROUTINE NLFFF_ini
     CLOSE(38)
     OPEN(39, file=trim(adjustl(dloc))//'jz2idl.dat', form="unformatted")
     WRITE(39) jz(1:nx+1,1:ny+1,1:nz+1,1)
-    CLOSE(39)
+    CLOSE(39)    
+    OPEN(40, file=trim(adjustl(dloc))//'ETA2idl.dat', form="unformatted")
+    WRITE(40) etavar(1:nx+1,1:ny+1,1:nz+1,1)
+    CLOSE(40)
     PRINT*, 'DONE. TERMINATING.'  
     STOP
  ENDIF
@@ -136,9 +157,9 @@ SUBROUTINE NLFFF_ini
   !currently do not have E field derivs
  ! can easily include this, but for now calculate E-field derivs on the fly like for Lare3d..
  
-END SUBROUTINE NLFFF_ini
+END SUBROUTINE MHDp_ini
 !------------------------------------------------------------------------------!
-SUBROUTINE NLFFF_fini
+SUBROUTINE MHDp_fini
 
     DEALLOCATE(bx)
     DEALLOCATE(by)
@@ -148,18 +169,17 @@ SUBROUTINE NLFFF_fini
     DEALLOCATE(Jz)
     DEALLOCATE(myx)
     DEALLOCATE(myy)
-    DEALLOCATE(myz)
+    DEALLOCATE(myz)    
+    !DEALLOCATE(etavar)
 
-END SUBROUTINE NLFFF_fini
+END SUBROUTINE MHDp_fini
 !------------------------------------------------------------------------------!
-FUNCTION N3d(R,T)
+FUNCTION P3d(R,T)
 ! function to calculate local quantities at the particle position
-! (slimmed down version of f3d with only local interpolation!).
-! OCT2014: updated to include higher order derivs to increase accuracy
 
    REAL(num), DIMENSION(3), INTENT(IN)		:: R		!actual position
    REAL(num), INTENT(IN)			:: T
-   REAL(num), DIMENSION(36)			:: N3d
+   REAL(num), DIMENSION(36)			:: P3d
    REAL(num)					:: temp,  modj
    REAL(num), DIMENSION(3)			:: dg, odg, coffset
    REAL(num), DIMENSION(:), ALLOCATABLE		:: dgt, odgt
@@ -262,6 +282,12 @@ FUNCTION N3d(R,T)
    bz(l(1),l(2)+1,l(3)+1,l(4)+it),bz(l(1)+1,l(2)+1,l(3)+1,l(4)+it))
    bzt(it+1)=temp
    
+   !temp=linterp3d(coffset(1),coffset(2),coffset(3), &
+   !etavar(l(1),l(2),l(3),l(4)+it),etavar(l(1)+1,l(2),l(3),l(4)+it),etavar(l(1),l(2)+1,l(3),l(4)+it),&
+   !etavar(l(1)+1,l(2)+1,l(3),l(4)+it),etavar(l(1),l(2),l(3)+1,l(4)+it),etavar(l(1)+1,l(2),l(3)+1,l(4)+it), &
+   !etavar(l(1),l(2)+1,l(3)+1,l(4)+it),etavar(l(1)+1,l(2)+1,l(3)+1,l(4)+it))
+   !etavart(it+1)=temp
+   
    ! --STEP THREE--!
    ! create temporary arrays around target cell and calculate derivs using extra cells
    ! - how many cells depend on which finite difference routine used
@@ -272,11 +298,12 @@ FUNCTION N3d(R,T)
    ALLOCATE(mbx(-4:5,-4:5,-4:5))
    ALLOCATE(mby(-4:5,-4:5,-4:5))
    ALLOCATE(mbz(-4:5,-4:5,-4:5))
-
+   !ALLOCATE(meta(-4:5,-4:5,-4:5))
+   
    mbx=bx(l(1)-4:l(1)+5,l(2)-4:l(2)+5,l(3)-4:l(3)+5,l(4)+it)
    mby=by(l(1)-4:l(1)+5,l(2)-4:l(2)+5,l(3)-4:l(3)+5,l(4)+it)
    mbz=bz(l(1)-4:l(1)+5,l(2)-4:l(2)+5,l(3)-4:l(3)+5,l(4)+it)
-
+   !meta=etavar(l(1)-4:l(1)+5,l(2)-4:l(2)+5,l(3)-4:l(3)+5,l(4)+it)
 
    ! calculate x-derivs first..
    ALLOCATE(dmbxdx(-2:3,-4:5,-4:5))
@@ -330,8 +357,7 @@ FUNCTION N3d(R,T)
    ALLOCATE(mEx(-2:3,-2:3,-2:3))
    ALLOCATE(mEy(-2:3,-2:3,-2:3))
    ALLOCATE(mEz(-2:3,-2:3,-2:3))
-   ALLOCATE(meta(-2:3,-2:3,-2:3))
-   
+
    !but Steph and Duncan have already calculated the local currents.
    
    mjx=jx(l(1)-2:l(1)+3,l(2)-2:l(2)+3,l(3)-2:l(3)+3,l(4)+it)
@@ -351,7 +377,7 @@ FUNCTION N3d(R,T)
       !ELSE
       ! meta(ix,iy,iz)=0.0_num
       !ENDIF
-      meta(ix,iy,iz)=0.5_num*(tanh((modj-jcrit)/rwidth)+1.0_num)*eta+etabkg          
+      !meta(ix,iy,iz)=0.5_num*(tanh((modj-jcrit)/rwidth)+1.0_num)*eta+etabkg          
      END DO
     END DO
    END DO
@@ -448,9 +474,9 @@ FUNCTION N3d(R,T)
    DO iz=-2,3 
     DO iy=-2,3
      DO ix=-2,3
-      mEx(ix,iy,iz)=meta(ix,iy,iz)*mjx(ix,iy,iz)
-      mEy(ix,iy,iz)=meta(ix,iy,iz)*mjy(ix,iy,iz)
-      mEz(ix,iy,iz)=meta(ix,iy,iz)*mjz(ix,iy,iz)
+      mEx(ix,iy,iz)=eta*mjx(ix,iy,iz)
+      mEy(ix,iy,iz)=eta*mjy(ix,iy,iz)
+      mEz(ix,iy,iz)=eta*mjz(ix,iy,iz)
      ENDDO
     ENDDO
    ENDDO
@@ -462,7 +488,7 @@ FUNCTION N3d(R,T)
    DEALLOCATE(mjx)
    DEALLOCATE(mjy)
    DEALLOCATE(mjz)    
-   DEALLOCATE(meta)
+   !DEALLOCATE(meta)
    
    ! --STEP FIVE-- !
    ! finally, calculate derivatives of electric field:
@@ -596,77 +622,77 @@ FUNCTION N3d(R,T)
 
    IF (nframes.gt.1) THEN
 
-    N3d(1)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),bxt(1),bxt(2))
-    N3d(2)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),byt(1),byt(2))
-    N3d(3)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),bzt(1),bzt(2))
-    N3d(4)=0.0_num
-    N3d(5)=0.0_num
-    N3d(6)=0.0_num
-    N3d(7)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),Ext(1),Ext(2))
-    N3d(8)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),Eyt(1),Eyt(2))
-    N3d(9)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),Ezt(1),Ezt(2))   
-    N3d(10)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),jxt(1),jxt(2))
-    N3d(11)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),jyt(1),jyt(2))
-    N3d(12)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),jzt(1),jzt(2))
-    N3d(13)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbxdxt(1),dbxdxt(2))
-    N3d(14)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbydxt(1),dbydxt(2))
-    N3d(15)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbzdxt(1),dbzdxt(2))
-    N3d(16)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbxdyt(1),dbxdyt(2))
-    N3d(17)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbydyt(1),dbydyt(2))
-    N3d(18)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbzdyt(1),dbzdyt(2))
-    N3d(19)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbxdzt(1),dbxdzt(2))
-    N3d(20)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbydzt(1),dbydzt(2))
-    N3d(21)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbzdzt(1),dbzdzt(2))
-    N3d(22)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dExdxt(1),dExdxt(2))
-    N3d(23)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dEydxt(1),dEydxt(2))
-    N3d(24)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dEzdxt(1),dEzdxt(2))
-    N3d(25)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dExdyt(1),dExdyt(2))
-    N3d(26)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dEydyt(1),dEydyt(2))
-    N3d(27)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dEzdyt(1),dEzdyt(2))
-    N3d(28)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dExdzt(1),dExdzt(2))
-    N3d(29)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dEydzt(1),dEydzt(2))
-    N3d(30)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dEzdzt(1),dEzdzt(2))
-    N3d(31)=(bxt(2)-bxt(1))*odgt(l(4))
-    N3d(32)=(byt(2)-byt(1))*odgt(l(4))
-    N3d(33)=(bzt(2)-bzt(1))*odgt(l(4))
-    N3d(34)=(Ext(2)-Ext(1))*odgt(l(4))	! as we have multiple snapshots, we can calculate time derivs finally!
-    N3d(35)=(Eyt(2)-Eyt(1))*odgt(l(4))
-    N3d(36)=(Ezt(2)-Ezt(1))*odgt(l(4))
+    P3d(1)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),bxt(1),bxt(2))
+    P3d(2)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),byt(1),byt(2))
+    P3d(3)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),bzt(1),bzt(2))
+    P3d(4)=0.0_num
+    P3d(5)=0.0_num
+    P3d(6)=0.0_num
+    P3d(7)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),Ext(1),Ext(2))
+    P3d(8)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),Eyt(1),Eyt(2))
+    P3d(9)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),Ezt(1),Ezt(2))   
+    P3d(10)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),jxt(1),jxt(2))
+    P3d(11)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),jyt(1),jyt(2))
+    P3d(12)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),jzt(1),jzt(2))
+    P3d(13)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbxdxt(1),dbxdxt(2))
+    P3d(14)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbydxt(1),dbydxt(2))
+    P3d(15)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbzdxt(1),dbzdxt(2))
+    P3d(16)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbxdyt(1),dbxdyt(2))
+    P3d(17)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbydyt(1),dbydyt(2))
+    P3d(18)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbzdyt(1),dbzdyt(2))
+    P3d(19)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbxdzt(1),dbxdzt(2))
+    P3d(20)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbydzt(1),dbydzt(2))
+    P3d(21)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dbzdzt(1),dbzdzt(2))
+    P3d(22)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dExdxt(1),dExdxt(2))
+    P3d(23)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dEydxt(1),dEydxt(2))
+    P3d(24)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dEzdxt(1),dEzdxt(2))
+    P3d(25)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dExdyt(1),dExdyt(2))
+    P3d(26)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dEydyt(1),dEydyt(2))
+    P3d(27)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dEzdyt(1),dEzdyt(2))
+    P3d(28)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dExdzt(1),dExdzt(2))
+    P3d(29)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dEydzt(1),dEydzt(2))
+    P3d(30)=linterp1d((T-ltimes(l(4)))*odgt(l(4)),dEzdzt(1),dEzdzt(2))
+    P3d(31)=(bxt(2)-bxt(1))*odgt(l(4))
+    P3d(32)=(byt(2)-byt(1))*odgt(l(4))
+    P3d(33)=(bzt(2)-bzt(1))*odgt(l(4))
+    P3d(34)=(Ext(2)-Ext(1))*odgt(l(4))	! as we have multiple snapshots, we can calculate time derivs finally!
+    P3d(35)=(Eyt(2)-Eyt(1))*odgt(l(4))
+    P3d(36)=(Ezt(2)-Ezt(1))*odgt(l(4))
     DEALLOCATE(dgt,odgt)
     
    ELSE
    
-    N3d(1)=bxt(1)
-    N3d(2)=byt(1)
-    N3d(3)=bzt(1)
-    N3d(4)=0.0_num
-    N3d(5)=0.0_num
-    N3d(6)=0.0_num
-    N3d(7)=Ext(1)
-    N3d(8)=Eyt(1)
-    N3d(9)=Ezt(1)   
-    N3d(10)=jxt(1)
-    N3d(11)=jyt(1)
-    N3d(12)=jzt(1)
-    N3d(13)=dbxdxt(1)
-    N3d(14)=dbydxt(1)
-    N3d(15)=dbzdxt(1)
-    N3d(16)=dbxdyt(1)
-    N3d(17)=dbydyt(1)
-    N3d(18)=dbzdyt(1)
-    N3d(19)=dbxdzt(1)
-    N3d(20)=dbydzt(1)
-    N3d(21)=dbzdzt(1)
-    N3d(22)=dExdxt(1)
-    N3d(23)=dEydxt(1)
-    N3d(24)=dEzdxt(1)
-    N3d(25)=dExdyt(1)
-    N3d(26)=dEydyt(1)
-    N3d(27)=dEzdyt(1)
-    N3d(28)=dExdzt(1)
-    N3d(29)=dEydzt(1)
-    N3d(30)=dEzdzt(1)
-    N3d(31:36)=0.0_num
+    P3d(1)=bxt(1)
+    P3d(2)=byt(1)
+    P3d(3)=bzt(1)
+    P3d(4)=0.0_num
+    P3d(5)=0.0_num
+    P3d(6)=0.0_num
+    P3d(7)=Ext(1)
+    P3d(8)=Eyt(1)
+    P3d(9)=Ezt(1)   
+    P3d(10)=jxt(1)
+    P3d(11)=jyt(1)
+    P3d(12)=jzt(1)
+    P3d(13)=dbxdxt(1)
+    P3d(14)=dbydxt(1)
+    P3d(15)=dbzdxt(1)
+    P3d(16)=dbxdyt(1)
+    P3d(17)=dbydyt(1)
+    P3d(18)=dbzdyt(1)
+    P3d(19)=dbxdzt(1)
+    P3d(20)=dbydzt(1)
+    P3d(21)=dbzdzt(1)
+    P3d(22)=dExdxt(1)
+    P3d(23)=dEydxt(1)
+    P3d(24)=dEzdxt(1)
+    P3d(25)=dExdyt(1)
+    P3d(26)=dEydyt(1)
+    P3d(27)=dEzdyt(1)
+    P3d(28)=dExdzt(1)
+    P3d(29)=dEydzt(1)
+    P3d(30)=dEzdzt(1)
+    P3d(31:36)=0.0_num
    ENDIF
    
    DEALLOCATE(bxt, byt, bzt, Ext, Eyt, Ezt, jxt, jyt, jzt)
@@ -675,9 +701,9 @@ FUNCTION N3d(R,T)
 
    RETURN
 
-END FUNCTION N3d
+END FUNCTION P3d
 !------------------------------------------------------------------------------!    
-SUBROUTINE NLFFFIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf)
+SUBROUTINE MHDpFIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf)
 
  REAL(num), DIMENSION(3),INTENT(OUT)	:: B,E
  REAL(num), DIMENSION(3),INTENT(OUT)	:: DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT
@@ -689,7 +715,7 @@ SUBROUTINE NLFFFIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf)
 ! For the NLFFF code, each of the returned variables will be in REAL units:
 ! normalise these quantities so the orbits can also work in non-dimensional quantities
 
-   iquants=N3d(R,T)
+   iquants=P3d(R,T)
    B	=iquants(1:3)/Bscl
    Vf	=0.0_num
    E	=iquants(7:9)/Escl
@@ -702,7 +728,7 @@ SUBROUTINE NLFFFIELDS(R,T,E,B,DBDX,DBDY,DBDZ,DBDT,DEDX,DEDY,DEDZ,DEDT,Vf)
    DEDZ	=iquants(25:27)/Escl*lscl
    DEDT	=0.0_num
 
-END SUBROUTINE NLFFFIELDS
+END SUBROUTINE MHDpFIELDS
 
-END MODULE NLFF_fields
+END MODULE MHDp_fields
 
