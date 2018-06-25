@@ -224,7 +224,11 @@ FUNCTION P3d(R,T)
       EXIT
     ENDIF
    ENDDO
-   IF (l(3).eq.(-nz)) print*, R(3), myz(1), myz(5)
+   IF ((l(3).eq.(-nz)).OR.(l(2).eq.(-ny)).OR.(l(1).eq.(-nx))) THEN
+    p3d(:)=0.0_num
+    Rlost=.TRUE.
+    return
+   ENDIF
 
 ! No guarantee we have more than one frame. IF we have one, this routine doesn't bother interpolating in time
   IF (nframes.gt.1) THEN

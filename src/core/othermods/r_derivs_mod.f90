@@ -268,8 +268,8 @@ SUBROUTINE DERIVS (T, R, DRDT, U, DUDT,GAMMA, DGAMMADT,MU, T1, T2)
   
  !  STOP
   !DgammaDT=Omscl*tscl*vscl*vscl/c/c*(dot(DRperpDT,E)+U/gamma*dot(B,E)*oMODB)+vscl*vscl/c/c*MU/gamma*DmodBDT*fac	!(assuming eperp<<B)  
-  DgammaDT=Omscl*tscl*vscl*vscl/c/c*(dot(DRperpDT,E)+U/gamma*dot(B,E)*oMODB)+vscl*vscl/c/c*MU/gamma*DmodBDT*fac	!THRELFALL ET AL 2015
-  
+   DgammaDT=Omscl*tscl*vscl*vscl/c/c*(dot(DRperpDT,E)+U/gamma*dot(B,E)*oMODB)+vscl*vscl/c/c*MU/gamma*DmodBDT*fac	!THRELFALL ET AL 2015
+   return
 
 !-----------------------------------------------------------------------!
 ! Relativistic versions WITH Birn et al (2004) Normalisation		!

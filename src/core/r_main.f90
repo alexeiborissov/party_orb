@@ -284,6 +284,7 @@ IMPLICIT NONE
        GAMMASTARTKEEP=GAMMASTART       
        Ekin = Ekin*AQ/Ekscl        
        
+       Rlost=.FALSE.
        !Call the rk sophisticated driver, which then works out the arrays for the
        !time steps and positions.
        CALL RKDRIVE(RSTART,USTART,GAMMASTART,MU,T1,T2,EPS,H1,NOK,NBAD,TT,S,TOTAL)

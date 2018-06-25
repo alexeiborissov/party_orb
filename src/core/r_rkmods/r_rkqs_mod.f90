@@ -41,13 +41,14 @@ MODULE M_rkqsR
 ! CHARACTER(LEN=35)			:: tempfile
  INTEGER, INTENT(OUT)			:: uflag
  uflag=0
- 
+ !print 669, R, DRDT
+ !669 format ('R3=[',ES9.2,',',ES9.2,',',ES9.2,'], DRDT=[',ES9.2,',',ES9.2,',',ES9.2,']') 
  H=HTRY                   !Initial value for stepsize
- DO 
-  CALL RKCK(R,DRDT,U,DUDT,GAMMA,DGAMMADT,T,H,MU,RTEMP,UTEMP,GAMMATEMP, RERR,T1,T2)
-  !print 669, R, DRDT
-   !669 format ('R3=[',ES9.2,',',ES9.2,',',ES9.2,'], DRDT=[',ES9.2,',',ES9.2,',',ES9.2,']')
-  ERRMAX=maxval(abs(RERR(:)/RSCAL(:)))/EPS 
+
+ DO WHILE (.NOT.(Rlost)) 
+   CALL RKCK(R,DRDT,U,DUDT,GAMMA,DGAMMADT,T,H,MU,RTEMP,UTEMP,GAMMATEMP, RERR,T1,T2)
+
+   ERRMAX=maxval(abs(RERR(:)/RSCAL(:)))/EPS 
   !WRITE(*,1001)"time:",Tscl*(T-t1)
   !WRITE(*,1004)"RERR:",RERR
   !WRITE(*,1004)"RSCAL:",RSCAL
@@ -57,34 +58,38 @@ MODULE M_rkqsR
   !1004 FORMAT (a,5E13.4)
   !1001 FORMAT (a,E13.4)
   
-  IF (ERRMAX <= 1.0) EXIT
+   IF (ERRMAX <= 1.0) EXIT
    HTEMP=SAFETY*H*(ERRMAX**PSHRINK)
-   
-  HNEW=sign(max(abs(HTEMP),0.1_num*abs(H)),H)  
-  !PRINT 1013,  abs(HTEMP), 0.1_num*abs(H), H, HNEW
-  !1013 FORMAT ("abs(HTEMP)=",E11.4," 0.1|H|=",E11.4," H=",E11.4, " HNEW=",E11.4) 
+   HNEW=sign(max(abs(HTEMP),0.1_num*abs(H)),H)  
+   !PRINT 1013,  abs(HTEMP), 0.1_num*abs(H), H, HNEW
+   !1013 FORMAT ("abs(HTEMP)=",E11.4," 0.1|H|=",E11.4," H=",E11.4, " HNEW=",E11.4) 
   
-  H=sign(max(abs(HTEMP),0.1_num*abs(H)),H)
-  TNEW=T+H
-  IF (TNEW == T) THEN
-   PRINT *, 'STEPSIZE UNDERFLOW IN RKQS'
-   PRINT *, 'Particle No.',pn
-   PRINT *, 'T & TNEW',T,TNEW
-   uflag=1
-   EXIT
-  END IF
- END DO
+   H=sign(max(abs(HTEMP),0.1_num*abs(H)),H)
+   TNEW=T+H
+   IF (TNEW == T) THEN
+    PRINT *, 'STEPSIZE UNDERFLOW IN RKQS'
+    PRINT *, 'Particle No.',pn
+    PRINT *, 'T & TNEW',T,TNEW
+    uflag=1
+    EXIT
+   END IF
+  END DO
  IF (ERRMAX > ERRCON) THEN
   HNEXT=SAFETY*H*(ERRMAX**PGROW)
  ELSE
   HNEXT=5.0_num*H
  END IF
- HDID=H
- T=T+H
- R(:)=RTEMP(:) 
- U = UTEMP
- GAMMA = GAMMATEMP
-
+ 
+! IF(.NOT.(Rlost)) THEN
+  HDID=H
+  T=T+H
+  R(:)=RTEMP(:) 
+  U = UTEMP
+  GAMMA = GAMMATEMP
+  return
+! ELSE
+!  return
+! ENDIF
 !print 667, R
 !   667 format ('R=[',ES9.2,',',ES9.2,',',ES9.2,']')
 
