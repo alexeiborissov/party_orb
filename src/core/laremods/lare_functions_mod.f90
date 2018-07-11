@@ -137,7 +137,10 @@ FUNCTION linterp3d(dx,dy,dz,f000,f100,f010,f110,f001,f101,f011,f111)
       !print*, abs(dx)
       !print*, abs(dy)
       !print*, abs(dz)
-      STOP
+      Rlost=.TRUE.
+      linterp3d=0.0_num
+      RETURN
+      !STOP
     ENDIF
 
     a=f000
@@ -163,8 +166,11 @@ FUNCTION linterp2d(dx,dy,f00,f10,f01,f11)
     REAL(num)			:: a,b,c,d
 
     IF((abs(dx).gt.1.0_num).OR.(abs(dy).gt.1.0_num)) THEN
-      PRINT*, 'CRITICAL ERROR: dx, dy is TOO BIG'
-      STOP
+      PRINT*, 'CRITICAL ERROR: dx, dy is TOO BIG'      
+      Rlost=.TRUE.
+      linterp3d=0.0_num
+      RETURN
+      !STOP
     ENDIF
 
     a=f00
