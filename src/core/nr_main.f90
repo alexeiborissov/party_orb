@@ -7,6 +7,7 @@ USE M_DRIVERN, ONLY: RKDRIVE
 USE mpi_routines
 USE bourdin_fields, ONLY: bour_ini, bour_fini
 USE NLFF_fields, ONLY: NLFFF_ini, NLFFF_fini
+USE MHDp_fields, ONLY: MHDp_ini, MHDp_fini
 USE M_products, ONLY: DOT, CROSS
 USE M_fields, ONLY: FIELDS
 USE gammadist_mod, ONLY: random_gamma
@@ -37,7 +38,9 @@ IMPLICIT NONE
  l3dflag=.FALSE.
  l2dflag=.FALSE.
  analyticalflag=.FALSE.
-
+ NLFFflag=.FALSE.
+ MHDpflag=.FALSE.
+ 
  !read in the parameters from the input file
  CALL read_param
 
@@ -94,6 +97,14 @@ IMPLICIT NONE
    zee=(/myz(6),myz(nz-5)/)     
    print*, '----'
    PRINT*, '..evaluating particle array against NLFF grid..' 
+  ELSE IF ((str_cmp(FMOD, "MHDp")).OR.(str_cmp(FMOD, "mhdp"))) THEN
+   MHDpflag=.TRUE.
+   CALL MHDp_ini
+   xee=(/myx(6),myx(nx-5)/)
+   yee=(/myy(6),myy(ny-5)/)
+   zee=(/myz(6),myz(nz-5)/)     
+   print*, '----'
+   PRINT*, '..evaluating particle array against Paolos MHD grid..'
   ELSE IF ((str_cmp(FMOD, "BOR")).OR.(str_cmp(FMOD, "bor"))) THEN
    bourdinflag=.TRUE.
    CALL bour_ini      ! read in data
@@ -104,7 +115,7 @@ IMPLICIT NONE
    PRINT*, '..evaluating particle array against BOURDIN grid..'
   ELSE
    PRINT*, "incorrect module selection, choose from:"
-   PRINT*, "['l3d','l2d','sep','CMT','test','bour', 'nlff']"
+   PRINT*, "['l3d','l2d','sep','CMT','test','bour', 'nlff', 'MHDp']"
    STOP
   END IF
   
@@ -280,6 +291,7 @@ IMPLICIT NONE
        Ekin = Ekin*AQ/Ekscl !convert energy from ev to joules (inc. in non-rel)
        VPARSTARTKEEP=VPARSTART
        
+       Rlost=.FALSE.
        !Call the rk sophisticated driver, which then works out the arrays for the
        !time steps and positions.
        CALL RKDRIVE(RSTART,VPARSTART,MU,T1,T2,EPS,H1,NOK,NBAD,TT,S,TOTAL)

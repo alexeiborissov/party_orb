@@ -38,7 +38,7 @@ MODULE M_rkqsN
 uflag=0
 
  H=HTRY                   !Initial value for stepsize
- DO 
+ DO WHILE (.NOT.(Rlost)) 
   CALL RKCK(R,DRDT,VPAR,DVPARDT,T,H,MU,RTEMP,VPARTEMP,RERR,T1,T2)
   ERRMAX=maxval(abs(RERR(:)/RSCAL(:)))/EPS 
   !WRITE(*,1001)"time:",Tscl*(T-t1)
