@@ -1,7 +1,7 @@
 &inputdata
 
-T1=0.5
-T2=2.0
+T1=0.1
+T2=10.0
 
 H1=0.0001	
 EPS=1.0E-15
@@ -10,17 +10,17 @@ AlphaSteps=2
 AlphaMin=45.0
 AlphaMax=45.0
 
-R1(1)=-5E6
-R2(1)=5E6
-RSTEPS(1)=2
+R1(1)=-5E7
+R2(1)=5E7
+RSTEPS(1)=16
 
-R1(2)=-5E6
-R2(2)=5E6
-RSTEPS(2)=2
+R1(2)=-5E7
+R2(2)=5E7
+RSTEPS(2)=16
 
-R1(3)=2E6
-R2(3)=1.6E7
-RSTEPS(3)=2
+R1(3)=5E6
+R2(3)=1.6E8
+RSTEPS(3)=16
 
 EkinLow=2e1
 EkinHigh=2e1

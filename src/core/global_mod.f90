@@ -13,7 +13,7 @@ MODULE global
  CHARACTER(Len = 4), PARAMETER	:: FMOD='MHDp' ! SWITCH BETWEEN FIELDS: "l3d","l2d", "SEP","CMT","test","bor", "NLFF", "MHDp"
  INTEGER, PARAMETER		:: mysnap=0000	!  no. of ****.cfd/****.sdf file (if "l3d")
  INTEGER, PARAMETER		:: nframes=1	! no. of frames
- CHARACTER(Len = 40)		:: sloc='../../../data_MHD/'
+ CHARACTER(Len = 40)		:: sloc='../../../../data_MHD/'
 
 !##########################################################################
 ! now some stuff required to plug in lare data 

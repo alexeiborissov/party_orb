@@ -62,9 +62,9 @@ SUBROUTINE MHDp_ini
  print*, minval(myy),"->", maxval(myy)
  print*, minval(myz),"->", maxval(myz) 
  !NORMALISE NOW:
- myx=myx/1e3/lscl
- myy=myy/1e3/lscl
- myz=myz/1e3/lscl	!paolo's lengths are in cm(!) - make them metres, then divide by new arbitrary lengthscale
+ myx=myx/1e2/lscl
+ myy=myy/1e2/lscl
+ myz=myz/1e2/lscl	!paolo's lengths are in cm(!) - make them metres, then divide by new arbitrary lengthscale
  
 
 ! read fields
@@ -99,17 +99,17 @@ SUBROUTINE MHDp_ini
  READ(26) mydat
  !jx(1:nx+1,1:ny+1,1:nz+1,1)=mydat
  DO ii=1,nx+1
-  jx(ii,1:ny+1,1:nz+1,1)=mydat(ii,1:ny+1,1:nz+1)*1E-4*1e3
+  jx(ii,1:ny+1,1:nz+1,1)=mydat(ii,1:ny+1,1:nz+1)*1E-4*1e2
  ENDDO 
  READ(26) mydat
  !jy(1:nx+1,1:ny+1,1:nz+1,1)=mydat
  DO ii=1,ny+1
-  jy(1:nx+1,ii,1:nz+1,1)=mydat(1:nx+1,ii,1:nz+1)*1E-4*1e3
+  jy(1:nx+1,ii,1:nz+1,1)=mydat(1:nx+1,ii,1:nz+1)*1E-4*1e2
  ENDDO 
  READ(26) mydat
  !jz(1:nx+1,1:ny+1,1:nz+1,1)=mydat
  DO ii=1,nz
-  jz(1:nx+1,1:ny+1,ii,1)=mydat(1:nx+1,1:ny+1,ii)*1E-4*1e3
+  jz(1:nx+1,1:ny+1,ii,1)=mydat(1:nx+1,1:ny+1,ii)*1E-4*1e2
  ENDDO 
  CLOSE(26)
  
