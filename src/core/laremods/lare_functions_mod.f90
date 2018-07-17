@@ -134,9 +134,9 @@ FUNCTION linterp3d(dx,dy,dz,f000,f100,f010,f110,f001,f101,f011,f111)
 
     IF((abs(dx).gt.1.0_num).OR.(abs(dy).gt.1.0_num).OR.(abs(dz).gt.1.0_num)) THEN
       PRINT*, 'CRITICAL ERROR: dx, dy or dz is TOO BIG (in linterp3d: lare_functions_mod)'
-      IF (abs(dx).gt.1.0_num) THEN PRINT*, 'dx:', abs(dx)
-      IF (abs(dy).gt.1.0_num) THEN PRINT*, 'dy:', abs(dy)      
-      IF (abs(dz).gt.1.0_num) THEN PRINT*, 'dz:', abs(dz)
+      IF (abs(dx).gt.1.0_num) PRINT*, 'dx:', abs(dx)
+      IF (abs(dy).gt.1.0_num) PRINT*, 'dy:', abs(dy)      
+      IF (abs(dz).gt.1.0_num) PRINT*, 'dz:', abs(dz)
       Rlost=.TRUE.
       linterp3d=0.0_num
       RETURN
@@ -167,8 +167,8 @@ FUNCTION linterp2d(dx,dy,f00,f10,f01,f11)
 
     IF((abs(dx).gt.1.0_num).OR.(abs(dy).gt.1.0_num)) THEN
       PRINT*, 'CRITICAL ERROR: dx, dy is TOO BIG (in linterp2d: lare_functions_mod)'      
-      IF (abs(dx).gt.1.0_num) THEN PRINT*, 'dx:', abs(dx)
-      IF (abs(dy).gt.1.0_num) THEN PRINT*, 'dy:', abs(dy)   
+      IF (abs(dx).gt.1.0_num) PRINT*, 'dx:', abs(dx)
+      IF (abs(dy).gt.1.0_num) PRINT*, 'dy:', abs(dy)   
       Rlost=.TRUE.
       linterp2d=0.0_num
       RETURN
@@ -192,7 +192,9 @@ FUNCTION linterp1d(dx,f0,f1)
     IF(abs(dx).gt.1.0_num) THEN
       PRINT*, 'CRITICAL ERROR: dx is TOO BIG'
       print*, abs(dx)
-      STOP
+      Rlost=.TRUE.
+      linterp1d=0.0_num
+      RETURN
     ENDIF
   
   linterp1d=(1.0_num-dx)*f0+dx*f1
