@@ -10,10 +10,10 @@ MODULE global
  SAVE 
   
 !########################################################################## 
- CHARACTER(Len = 4), PARAMETER	:: FMOD='MHDp' ! SWITCH BETWEEN FIELDS: "l3d","l2d", "SEP","CMT","test","bor", "NLFF", "MHDp"
+ CHARACTER(Len = 4), PARAMETER	:: FMOD='l2d' ! SWITCH BETWEEN FIELDS: "l3d","l2d", "SEP","CMT","test","bor", "NLFF", "MHDp"
  INTEGER, PARAMETER		:: mysnap=0000	!  no. of ****.cfd/****.sdf file (if "l3d")
  INTEGER, PARAMETER		:: nframes=1	! no. of frames
- CHARACTER(Len = 40)		:: sloc='../../../../data_MHD/'
+ CHARACTER(Len = 40)		:: sloc='lare2d_data/'
 
 !##########################################################################
 ! now some stuff required to plug in lare data 
@@ -134,7 +134,8 @@ MODULE global
  !REAL(num), DIMENSION(2), PARAMETER	:: xe=(/-0.9_num,0.9_num/),ye=(/-0.9_num,0.9_num/),ze=(/-100.00_num,100.0_num/)
  !REAL(num), DIMENSION(2), PARAMETER	:: ze=(/-9.5_num,9.5_num/),ye=(/-1.8_num,1.8_num/),xe=(/-1.8_num,3.8_num/)
  !REAL(num), DIMENSION(2), PARAMETER	:: ze=(/0.25_num,19.75_num/),ye=(/-7.5_num,7.5_num/),xe=(/-7.5_num,7.5_num/)	!etab-5 
- REAL(num), DIMENSION(2), PARAMETER	:: ze=(/2.0_num,18.0_num/),ye=(/-8.5_num,8.5_num/),xe=(/-8.5_num,8.5_num/)	!etab-5
+ !REAL(num), DIMENSION(2), PARAMETER	:: ze=(/2.0_num,18.0_num/),ye=(/-8.5_num,8.5_num/),xe=(/-8.5_num,8.5_num/)	!etab-5
+ REAL(num), DIMENSION(2), PARAMETER :: xe=(/-0.9_num,0.9_num/),ye=(/-0.9_num,0.9_num/),ze=(/-100.00_num,100.0_num/)
  !REAL(num), PARAMETER			:: eta=0.001_num, jcrit=25.0_num
  REAL(num), PARAMETER			:: eta=7.2527096E13*1e-4/Lscl/Vscl, jcrit=0.8_num, rwidth=0.05_num, etabkg=0.00001_num
  !REAL(num), PARAMETER			:: eta=0.001_num, jcrit=0.8_num, rwidth=0.05_num, etabkg=0.00001_num		!etab-5
@@ -149,7 +150,8 @@ MODULE global
  !INTEGER, PARAMETER				:: nx_global=256, ny_global=256, nz_global=512		! alan's lare3d sdf config twoloops
  !INTEGER, PARAMETER				:: nx_global=256, ny_global=256, nz_global=256		! Steph/Duncan NLFFF resolution
  !INTEGER, PARAMETER				:: nx_global=512, ny_global=512, nz_global=512		! alan etab-5 resolution
- INTEGER, PARAMETER				:: nx_global=255, ny_global=255, nz_global=249		! Paolo MHD resolution
+ !INTEGER, PARAMETER				:: nx_global=255, ny_global=255, nz_global=249		! Paolo MHD resolution
+ INTEGER, PARAMETER				:: nx_global=512, ny_global=512, nz_global=1		! Paolo MHD resolution
  INTEGER, PARAMETER 				:: data_dir_max_length = 64
  INTEGER 					:: nx, ny, nz	
  INTEGER, DIMENSION(:), ALLOCATABLE		:: dims
@@ -216,6 +218,9 @@ MODULE global
   
   INTEGER, DIMENSION(:), ALLOCATABLE	:: global_dims, local_dims
   REAL(num), DIMENSION(:), ALLOCATABLE :: extents, extent, stagger
+
+  ! flag to indicate whether MHD grid we are using is uniform
+  logical, parameter    :: uniform_grid = .true.
  
 !----------------------------------------------------
  contains

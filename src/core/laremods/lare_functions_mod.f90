@@ -252,32 +252,39 @@ FUNCTION T2d(R,T)
     dg=(/myx(2)-myx(1),myy(2)-myy(1)/)	! grid spacing
     odg=(/1.0_num/dg(1),1.0_num/dg(2)/)	! one over grid spacing
     l=(/-nx,-ny,-nframes/)					! initial value of l, set to silly value (as <=0 triggers flag)   
+    l_check = l
     
        
   ! --STEP ONE-- !
   ! first, locate the (x,y,z) position on the grid
   ! particle found between (jjx,jjy,jjz) and (jjx+1,jjy+1,jjz+1)
   ! need four gridpoints either side to guarantee we can create derivs successfully   
-     
-   DO jjx=4,nx-4
-    IF ((R(1).ge.myx(jjx)).and.(R(1).lt.myx(jjx+1))) THEN 
-      l(1)=jjx
-      EXIT
-    !ELSE
-    !  PRINT *, 'CANNOT FIND R(1) IN LARE x RANGE'
-    ENDIF
-   ENDDO
-   DO jjy=4,ny-4
-    IF ((R(2).ge.myy(jjy)).and.(R(2).lt.myy(jjy+1))) THEN
-      l(2)=jjy
-    ! print*, l(2)
-      EXIT
-    !ELSE
-    !  PRINT *, 'CANNOT FIND R(2) IN LARE y RANGE'
-    ENDIF
-   ENDDO
 
-
+   if (uniform_grid) then
+     l(1) = floor((R(1) - myx(4))*odg(1)) + 4
+     l(2) = floor((R(2) - myy(4))*odg(2)) + 4
+   else
+     DO jjx=4,nx-4
+      IF ((R(1).ge.myx(jjx)).and.(R(1).lt.myx(jjx+1))) THEN 
+        !l(1)=jjx
+        l_check(1)=jjx
+        EXIT
+      !ELSE
+      !  PRINT *, 'CANNOT FIND R(1) IN LARE x RANGE'
+      ENDIF
+     ENDDO
+     DO jjy=4,ny-4
+      IF ((R(2).ge.myy(jjy)).and.(R(2).lt.myy(jjy+1))) THEN
+        l(2)=jjy
+        l_check(2)=jjy
+      ! print*, l(2)
+        EXIT
+      !ELSE
+      !  PRINT *, 'CANNOT FIND R(2) IN LARE y RANGE'
+      ENDIF
+     ENDDO
+   end if
+  
 ! No guarantee we have more than one frame. IF we have one, this routine doesn't bother interpolating in time
   IF (nframes.gt.1) THEN
    ALLOCATE(dgt(nframes-1),odgt(nframes-1))
@@ -698,26 +705,32 @@ FUNCTION T3d(R,T)
   ! first, locate the (x,y,z) position on the grid
   ! particle found between (jjx,jjy,jjz) and (jjx+1,jjy+1,jjz+1)   
      
-   DO jjx=4,nx-4
-    IF ((R(1).ge.myx(jjx)).and.(R(1).lt.myx(jjx+1))) THEN 
-      l(1)=jjx
-      EXIT
-    ENDIF
-   ENDDO
-   !IF (l(1).eq.(-nx)) fxflag=.TRUE.
-   DO jjy=4,ny-4
-    IF ((R(2).ge.myy(jjy)).and.(R(2).lt.myy(jjy+1))) THEN
-      l(2)=jjy
-      EXIT
-    ENDIF
-   ENDDO
-   !IF (l(2).eq.(-ny)) fyflag=.TRUE.
-   DO jjz=4,nz-4
-    IF ((R(3).ge.myz(jjz)).and.(R(3).lt.myz(jjz+1))) THEN
-      l(3)=jjz
-      EXIT
-    ENDIF
-   ENDDO
+   if (uniform_grid) then
+     l(1) = floor((R(1) - myx(4))*odg(1)) + 4
+     l(2) = floor((R(2) - myy(4))*odg(2)) + 4
+     l(3) = floor((R(3) - myz(4))*odg(3)) + 4
+   else
+     DO jjx=4,nx-4
+      IF ((R(1).ge.myx(jjx)).and.(R(1).lt.myx(jjx+1))) THEN 
+        l(1)=jjx
+        EXIT
+      ENDIF
+     ENDDO
+     !IF (l(1).eq.(-nx)) fxflag=.TRUE.
+     DO jjy=4,ny-4
+      IF ((R(2).ge.myy(jjy)).and.(R(2).lt.myy(jjy+1))) THEN
+        l(2)=jjy
+        EXIT
+      ENDIF
+     ENDDO
+     !IF (l(2).eq.(-ny)) fyflag=.TRUE.
+     DO jjz=4,nz-4
+      IF ((R(3).ge.myz(jjz)).and.(R(3).lt.myz(jjz+1))) THEN
+        l(3)=jjz
+        EXIT
+      ENDIF
+     ENDDO
+   end if
    
    IF ((l(1).eq.(-nx)).or.(l(2).eq.(-ny)).or.(l(3).eq.(-nz))) THEN 
     !LETS TRY TO CATCH THIS BEFORE NOW
