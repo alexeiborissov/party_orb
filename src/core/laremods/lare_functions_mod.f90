@@ -237,13 +237,25 @@ FUNCTION T2d(R,T)
    REAL(num)					:: temp,  modj
    REAL(num), DIMENSION(2)			:: dg, odg, coffset
    REAL(num), DIMENSION(:), ALLOCATABLE		:: dgt, odgt
-   REAL(num), DIMENSION(:), ALLOCATABLE		:: bxt, byt, bzt,vxt, vyt, vzt, Ext, Eyt, Ezt, jxt, jyt, jzt
-   REAL(num), DIMENSION(:), ALLOCATABLE		:: dbxdxt,dbxdyt,dbydxt,dbydyt,dbzdxt,dbzdyt
-   REAL(num), DIMENSION(:), ALLOCATABLE		:: dExdxt,dExdyt,dEydxt,dEydyt,dEzdxt,dEzdyt
-   REAL(num), DIMENSION(:, :), ALLOCATABLE	:: mbx, mby, mbz, mEx, mEy, mEz, mjx, mjy, mjz, mvx, mvy, mvz
-   REAL(num), DIMENSION(:, :), ALLOCATABLE	:: dmbxdx,dmbxdy,dmbydx,dmbydy,dmbzdx,dmbzdy
-   REAL(num), DIMENSION(:, :), ALLOCATABLE	:: dmExdx,dmExdy,dmEydx,dmEydy,dmEzdx,dmEzdy
-   REAL(num), DIMENSION(:, :), ALLOCATABLE	:: meta
+   !REAL(num), DIMENSION(:), ALLOCATABLE		:: bxt, byt, bzt,vxt, vyt, vzt, Ext, Eyt, Ezt, jxt, jyt, jzt
+   !REAL(num), DIMENSION(:), ALLOCATABLE		:: dbxdxt,dbxdyt,dbydxt,dbydyt,dbzdxt,dbzdyt
+   !REAL(num), DIMENSION(:), ALLOCATABLE		:: dExdxt,dExdyt,dEydxt,dEydyt,dEzdxt,dEzdyt
+   !REAL(num), DIMENSION(:, :), ALLOCATABLE	:: mbx, mby, mbz, mEx, mEy, mEz, mjx, mjy, mjz, mvx, mvy, mvz
+   !REAL(num), DIMENSION(:, :), ALLOCATABLE	:: dmbxdx,dmbxdy,dmbydx,dmbydy,dmbzdx,dmbzdy
+   !REAL(num), DIMENSION(:, :), ALLOCATABLE	:: dmExdx,dmExdy,dmEydx,dmEydy,dmEzdx,dmEzdy
+   !REAL(num), DIMENSION(:, :), ALLOCATABLE	:: meta
+   REAL(num), DIMENSION(2)		:: bxt, byt, bzt,vxt, vyt, vzt, Ext, Eyt, Ezt, jxt, jyt, jzt
+   REAL(num), DIMENSION(2)		:: dbxdxt,dbxdyt,dbydxt,dbydyt,dbzdxt,dbzdyt
+   REAL(num), DIMENSION(2)		:: dExdxt,dExdyt,dEydxt,dEydyt,dEzdxt,dEzdyt
+   REAL(num), DIMENSION(-4:5, -4:5)	:: mbx, mby, mbz 
+   REAL(num), DIMENSION(-2:3, -2:3)	:: mEx, mEy, mEz 
+   REAL(num), DIMENSION(-2:3, -2:3)	:: mjx, mjy, mjz 
+   REAL(num), DIMENSION(-2:3, -2:3)	:: mvx, mvy, mvz
+   REAL(num), DIMENSION(-2:3, -4:5)	:: dmbxdx,dmbydx,dmbzdx
+   REAL(num), DIMENSION(-4:5, -2:3)	:: dmbxdy,dmbydy,dmbzdy
+   REAL(num), DIMENSION(0:1, -2:3)	:: dmExdx,dmEydx,dmEzdx
+   REAL(num), DIMENSION(-2:3, 0:1)	:: dmExdy,dmEydy,dmEzdy
+   REAL(num), DIMENSION(-2:3, -2:3)	:: meta
    INTEGER, DIMENSION(3) 			:: l		! set at value it could never reach!
    INTEGER					:: jjx, jjy, jjz,jjt, rpt
    LOGICAL					:: fxflag=.FALSE., fyflag=.FALSE., fzflag=.FALSE.
@@ -252,7 +264,6 @@ FUNCTION T2d(R,T)
     dg=(/myx(2)-myx(1),myy(2)-myy(1)/)	! grid spacing
     odg=(/1.0_num/dg(1),1.0_num/dg(2)/)	! one over grid spacing
     l=(/-nx,-ny,-nframes/)					! initial value of l, set to silly value (as <=0 triggers flag)   
-    l_check = l
     
        
   ! --STEP ONE-- !
@@ -266,8 +277,7 @@ FUNCTION T2d(R,T)
    else
      DO jjx=4,nx-4
       IF ((R(1).ge.myx(jjx)).and.(R(1).lt.myx(jjx+1))) THEN 
-        !l(1)=jjx
-        l_check(1)=jjx
+        l(1)=jjx
         EXIT
       !ELSE
       !  PRINT *, 'CANNOT FIND R(1) IN LARE x RANGE'
@@ -276,7 +286,6 @@ FUNCTION T2d(R,T)
      DO jjy=4,ny-4
       IF ((R(2).ge.myy(jjy)).and.(R(2).lt.myy(jjy+1))) THEN
         l(2)=jjy
-        l_check(2)=jjy
       ! print*, l(2)
         EXIT
       !ELSE
@@ -300,15 +309,9 @@ FUNCTION T2d(R,T)
     ENDIF
    ENDDO
    rpt=1
-   ALLOCATE(bxt(2), byt(2), bzt(2),vxt(2), vyt(2), vzt(2), Ext(2), Eyt(2), Ezt(2), jxt(2), jyt(2), jzt(2))
-   ALLOCATE(dbxdxt(2),dbxdyt(2),dbydxt(2),dbydyt(2),dbzdxt(2),dbzdyt(2))
-   ALLOCATE(dExdxt(2),dExdyt(2),dEydxt(2),dEydyt(2),dEzdxt(2),dEzdyt(2))
   ELSE
    l(3)=1
    rpt=0
-   ALLOCATE(bxt(1), byt(1), bzt(1),vxt(1), vyt(1), vzt(1), Ext(1), Eyt(1), Ezt(1), jxt(1), jyt(1), jzt(1))
-   ALLOCATE(dbxdxt(1),dbxdyt(1),dbydxt(1),dbydyt(1),dbzdxt(1),dbzdyt(1))
-   ALLOCATE(dExdxt(1),dExdyt(1),dEydxt(1),dEydyt(1),dEzdxt(1),dEzdyt(1))
   !what happens if there is one frame to work with?
   ENDIF 
 
@@ -367,9 +370,6 @@ FUNCTION T2d(R,T)
    ! JT OCT2014: commented out O(h) derivs, and insert O(h^2)
    
    ! begin with temporary B arrays:
-   ALLOCATE(mbx(-4:5,-4:5))
-   ALLOCATE(mby(-4:5,-4:5))
-   ALLOCATE(mbz(-4:5,-4:5))
 
    mbx=bx(l(1)-4:l(1)+5,l(2)-4:l(2)+5,1,l(3)+it)
    mby=by(l(1)-4:l(1)+5,l(2)-4:l(2)+5,1,l(3)+it)
@@ -377,9 +377,6 @@ FUNCTION T2d(R,T)
 
 
    ! calculate x-derivs first..
-   ALLOCATE(dmbxdx(-2:3,-4:5))
-   ALLOCATE(dmbydx(-2:3,-4:5))
-   ALLOCATE(dmbzdx(-2:3,-4:5))
    
     DO iy=-4,5
      DO ix=-2,3
@@ -391,9 +388,6 @@ FUNCTION T2d(R,T)
 
    
    ! ..followed by y-derivs..
-   ALLOCATE(dmbxdy(-4:5,-2:3))
-   ALLOCATE(dmbydy(-4:5,-2:3))
-   ALLOCATE(dmbzdy(-4:5,-2:3))
  
     DO iy=-2,3
      DO ix=-4,5
@@ -408,23 +402,12 @@ FUNCTION T2d(R,T)
    ! NB the arrays are odd shapes depending on deriv direction but the target cell remains at [0:1,0:1,0:1]
    ! also need temporary velocity arrays, in order to calc E=-etaJ+vxB
 
-   ALLOCATE(mvx(-2:3,-2:3))
-   ALLOCATE(mvy(-2:3,-2:3))
-   ALLOCATE(mvz(-2:3,-2:3))
    mvx=vx(l(1)-2:l(1)+3,l(2)-2:l(2)+3,1,l(3)+it)
    mvy=vy(l(1)-2:l(1)+3,l(2)-2:l(2)+3,1,l(3)+it)
    mvz=vz(l(1)-2:l(1)+3,l(2)-2:l(2)+3,1,l(3)+it)
    
    
    ! now calculate temporary currents and also local eta values
-
-   ALLOCATE(mjx(-2:3,-2:3))
-   ALLOCATE(mjy(-2:3,-2:3))
-   ALLOCATE(mjz(-2:3,-2:3))
-   ALLOCATE(mEx(-2:3,-2:3))
-   ALLOCATE(mEy(-2:3,-2:3))
-   ALLOCATE(mEz(-2:3,-2:3))
-   ALLOCATE(meta(-2:3,-2:3))
    
    
     DO iy=-2,3
@@ -452,13 +435,6 @@ FUNCTION T2d(R,T)
     dmbydy(0,0), dmbydy(1,0), dmbydy(0,1), dmbydy(1,1)) ! 11
    dbzdyt(it+1)=linterp2d(coffset(1),coffset(2), &
     dmbzdy(0,0), dmbzdy(1,0), dmbzdy(0,1), dmbzdy(1,1)) ! 12            
-   
-   DEALLOCATE(dmbxdx)
-   DEALLOCATE(dmbydx)
-   DEALLOCATE(dmbzdx)
-   DEALLOCATE(dmbxdy)
-   DEALLOCATE(dmbydy)
-   DEALLOCATE(dmbzdy)
 
 
    ! interpolate j too at this stage:
@@ -481,24 +457,9 @@ FUNCTION T2d(R,T)
     ENDDO
 
       
-   
-   DEALLOCATE(mvx)
-   DEALLOCATE(mvy)
-   DEALLOCATE(mvz)
-   DEALLOCATE(mbx)
-   DEALLOCATE(mby)
-   DEALLOCATE(mbz)
-   DEALLOCATE(mjx)
-   DEALLOCATE(mjy)
-   DEALLOCATE(mjz)    
-   DEALLOCATE(meta)
-   
    ! --STEP FIVE-- !
    ! finally, calculate derivatives of electric field:
    
-   ALLOCATE(dmExdx(0:1,-2:3))
-   ALLOCATE(dmEydx(0:1,-2:3))
-   ALLOCATE(dmEzdx(0:1,-2:3))  
     DO iy=-2,3
      DO ix=0,1
       dmExdx(ix,iy)=oneotwelve*(-mEx(ix+2,iy)+8.0_num*mEx(ix+1,iy)-8.0_num*mEx(ix-1,iy)+mEx(ix-2,iy))*odg(1)
@@ -509,9 +470,6 @@ FUNCTION T2d(R,T)
 
    
 
-   ALLOCATE(dmExdy(-2:3,0:1))
-   ALLOCATE(dmEydy(-2:3,0:1))
-   ALLOCATE(dmEzdy(-2:3,0:1))   
     DO iy=0,1
      DO ix=-2,3  
       dmExdy(ix,iy)=oneotwelve*(-mEx(ix,iy+2)+8.0_num*mEx(ix,iy+1)-8.0_num*mEx(ix,iy-1)+mEx(ix,iy-2))*odg(2)
@@ -535,15 +493,6 @@ FUNCTION T2d(R,T)
    dEzdyt(it+1)=linterp2d(coffset(1),coffset(2), &
     dmEzdy(0,0), dmEzdy(1,0), dmEzdy(0,1), dmEzdy(1,1))
 
-   
-   DEALLOCATE(dmExdx)
-   DEALLOCATE(dmEydx)
-   DEALLOCATE(dmEzdx)
-   DEALLOCATE(dmExdy)
-   DEALLOCATE(dmEydy)
-   DEALLOCATE(dmEzdy)
-
-
    Ext(it+1)=linterp2d(coffset(1),coffset(2), &
     mEx(0,0), mEx(1,0), mEx(0,1), mEx(1,1))
    Eyt(it+1)=linterp2d(coffset(1),coffset(2), &
@@ -551,10 +500,6 @@ FUNCTION T2d(R,T)
    Ezt(it+1)=linterp2d(coffset(1),coffset(2), &
     mEz(0,0), mEz(1,0), mEz(0,1), mEz(1,1))
     
-   DEALLOCATE(mEx)
-   DEALLOCATE(mEy)
-   DEALLOCATE(mEz)
-   
   END DO
 
 
@@ -662,11 +607,6 @@ FUNCTION T2d(R,T)
     T2d(30)=0.0_num
     T2d(31:36)=0.0_num
    ENDIF
-   
-   DEALLOCATE(bxt, byt, bzt,vxt, vyt, vzt, Ext, Eyt, Ezt, jxt, jyt, jzt)
-   DEALLOCATE(dbxdxt,dbxdyt,dbydxt,dbydyt,dbzdxt,dbzdyt)
-   DEALLOCATE(dExdxt,dExdyt,dEydxt,dEydyt,dEzdxt,dEzdyt)
-   !DEALLOCATE(dgt,odgt)
 
    RETURN
 
@@ -684,13 +624,20 @@ FUNCTION T3d(R,T)
    REAL(num)					:: temp,  modj
    REAL(num), DIMENSION(3)			:: dg, odg, coffset
    REAL(num), DIMENSION(:), ALLOCATABLE		:: dgt, odgt
-   REAL(num), DIMENSION(:), ALLOCATABLE		:: bxt, byt, bzt,vxt, vyt, vzt, Ext, Eyt, Ezt, jxt, jyt, jzt
-   REAL(num), DIMENSION(:), ALLOCATABLE		:: dbxdxt,dbxdyt,dbxdzt,dbydxt,dbydyt,dbydzt,dbzdxt,dbzdyt,dbzdzt
-   REAL(num), DIMENSION(:), ALLOCATABLE		:: dExdxt,dExdyt,dExdzt,dEydxt,dEydyt,dEydzt,dEzdxt,dEzdyt,dEzdzt
-   REAL(num), DIMENSION(:, :, :), ALLOCATABLE	:: mbx, mby, mbz, mEx, mEy, mEz, mjx, mjy, mjz, mvx, mvy, mvz
-   REAL(num), DIMENSION(:, :, :), ALLOCATABLE	:: dmbxdx,dmbxdy,dmbxdz,dmbydx,dmbydy,dmbydz,dmbzdx,dmbzdy,dmbzdz
-   REAL(num), DIMENSION(:, :, :), ALLOCATABLE	:: dmExdx,dmExdy,dmExdz,dmEydx,dmEydy,dmEydz,dmEzdx,dmEzdy,dmEzdz
-   REAL(num), DIMENSION(:, :, :), ALLOCATABLE	:: meta
+   REAL(num), DIMENSION(2)		:: bxt, byt, bzt,vxt, vyt, vzt, Ext, Eyt, Ezt, jxt, jyt, jzt
+   REAL(num), DIMENSION(2)		:: dbxdxt,dbxdyt,dbxdzt,dbydxt,dbydyt,dbydzt,dbzdxt,dbzdyt,dbzdzt
+   REAL(num), DIMENSION(2)		:: dExdxt,dExdyt,dExdzt,dEydxt,dEydyt,dEydzt,dEzdxt,dEzdyt,dEzdzt
+   REAL(num), DIMENSION(-4:5, -4:5, -4:5)	:: mbx, mby, mbz
+   REAL(num), DIMENSION(-2:3, -2:3, -2:3)	:: mEx, mEy, mEz
+   REAL(num), DIMENSION(-2:3, -2:3, -2:3)	:: mjx, mjy, mjz
+   REAL(num), DIMENSION(-2:3, -2:3, -2:3)	:: mvx, mvy, mvz
+   REAL(num), DIMENSION(-2:3, -4:5, -4:5)	:: dmbxdx,dmbydx,dmbzdx
+   REAL(num), DIMENSION(-4:5, -2:3, -4:5)	:: dmbxdy,dmbydy,dmbzdy
+   REAL(num), DIMENSION(-4:5, -4:5, -2:3)	:: dmbxdz,dmbydz,dmbzdz
+   REAL(num), DIMENSION(0:1, -2:3, -2:3)	    :: dmExdx,dmEydx,dmEzdx
+   REAL(num), DIMENSION(-2:3, 0:1, -2:3)     :: dmExdy,dmEydy,dmEzdy
+   REAL(num), DIMENSION(-2:3, -2:3, 0:1)     :: dmExdz,dmEydz,dmEzdz
+   REAL(num), DIMENSION(-2:3, -2:3, -2:3)	:: meta
    INTEGER, DIMENSION(4) 			:: l		! set at value it could never reach!
    INTEGER					:: jjx, jjy, jjz,jjt, rpt
    LOGICAL					:: fxflag=.FALSE., fyflag=.FALSE., fzflag=.FALSE.
@@ -753,15 +700,9 @@ FUNCTION T3d(R,T)
     ENDIF
    ENDDO
    rpt=1
-   ALLOCATE(bxt(2), byt(2), bzt(2),vxt(2), vyt(2), vzt(2), Ext(2), Eyt(2), Ezt(2), jxt(2), jyt(2), jzt(2))
-   ALLOCATE(dbxdxt(2),dbxdyt(2),dbxdzt(2),dbydxt(2),dbydyt(2),dbydzt(2),dbzdxt(2),dbzdyt(2),dbzdzt(2))
-   ALLOCATE(dExdxt(2),dExdyt(2),dExdzt(2),dEydxt(2),dEydyt(2),dEydzt(2),dEzdxt(2),dEzdyt(2),dEzdzt(2))
   ELSE
    l(4)=1
    rpt=0
-   ALLOCATE(bxt(1), byt(1), bzt(1),vxt(1), vyt(1), vzt(1), Ext(1), Eyt(1), Ezt(1), jxt(1), jyt(1), jzt(1))
-   ALLOCATE(dbxdxt(1),dbxdyt(1),dbxdzt(1),dbydxt(1),dbydyt(1),dbydzt(1),dbzdxt(1),dbzdyt(1),dbzdzt(1))
-   ALLOCATE(dExdxt(1),dExdyt(1),dExdzt(1),dEydxt(1),dEydyt(1),dEydzt(1),dEzdxt(1),dEzdyt(1),dEzdzt(1))
   !what happens if there is one frame to work with?
   ENDIF 
 
@@ -823,12 +764,6 @@ FUNCTION T3d(R,T)
    ! JT OCT2014: commented out O(h) derivs, and insert O(h^2)
    
    ! begin with temporary B arrays:
-   ALLOCATE(mbx(-4:5,-4:5,-4:5))
-   ALLOCATE(mby(-4:5,-4:5,-4:5))
-   ALLOCATE(mbz(-4:5,-4:5,-4:5))
-   !ALLOCATE(mbx(-2:3,-2:3,-2:3))
-   !ALLOCATE(mby(-2:3,-2:3,-2:3))
-   !ALLOCATE(mbz(-2:3,-2:3,-2:3))
      
    !mbx=bx(l(1)-2:l(1)+3,l(2)-2:l(2)+3,l(3)-2:l(3)+3)
    !mby=by(l(1)-2:l(1)+3,l(2)-2:l(2)+3,l(3)-2:l(3)+3)
@@ -851,9 +786,6 @@ FUNCTION T3d(R,T)
    ! ENDDO
    !ENDDO
    ! calculate x-derivs first..
-   ALLOCATE(dmbxdx(-2:3,-4:5,-4:5))
-   ALLOCATE(dmbydx(-2:3,-4:5,-4:5))
-   ALLOCATE(dmbzdx(-2:3,-4:5,-4:5))
 
    DO iz=-4,5   
     DO iy=-4,5
@@ -879,9 +811,6 @@ FUNCTION T3d(R,T)
    ! ENDDO
    !ENDDO
    ! ..followed by y-derivs..
-   ALLOCATE(dmbxdy(-4:5,-2:3,-4:5))
-   ALLOCATE(dmbydy(-4:5,-2:3,-4:5))
-   ALLOCATE(dmbzdy(-4:5,-2:3,-4:5))
 
    DO iz=-4,5   
     DO iy=-2,3
@@ -906,9 +835,6 @@ FUNCTION T3d(R,T)
    ! ENDDO
    !ENDDO
    ! .. and finally z derivs.
-   ALLOCATE(dmbxdz(-4:5,-4:5,-2:3))
-   ALLOCATE(dmbydz(-4:5,-4:5,-2:3))
-   ALLOCATE(dmbzdz(-4:5,-4:5,-2:3))
 
    DO iz=-2,3
     DO iy=-4,5   
@@ -929,9 +855,6 @@ FUNCTION T3d(R,T)
    !mvx=vx(l(1)-1:l(1)+2,l(2)-1:l(2)+2,l(3)-1:l(3)+2)
    !mvy=vy(l(1)-1:l(1)+2,l(2)-1:l(2)+2,l(3)-1:l(3)+2)
    !mvz=vz(l(1)-1:l(1)+2,l(2)-1:l(2)+2,l(3)-1:l(3)+2)
-   ALLOCATE(mvx(-2:3,-2:3,-2:3))
-   ALLOCATE(mvy(-2:3,-2:3,-2:3))
-   ALLOCATE(mvz(-2:3,-2:3,-2:3))
    mvx=vx(l(1)-2:l(1)+3,l(2)-2:l(2)+3,l(3)-2:l(3)+3,l(4)+it)
    mvy=vy(l(1)-2:l(1)+3,l(2)-2:l(2)+3,l(3)-2:l(3)+3,l(4)+it)
    mvz=vz(l(1)-2:l(1)+3,l(2)-2:l(2)+3,l(3)-2:l(3)+3,l(4)+it)
@@ -948,13 +871,6 @@ FUNCTION T3d(R,T)
    !DO iz=-1,2   
    ! DO iy=-1,2
    !  DO ix=-1,2
-   ALLOCATE(mjx(-2:3,-2:3,-2:3))
-   ALLOCATE(mjy(-2:3,-2:3,-2:3))
-   ALLOCATE(mjz(-2:3,-2:3,-2:3))
-   ALLOCATE(mEx(-2:3,-2:3,-2:3))
-   ALLOCATE(mEy(-2:3,-2:3,-2:3))
-   ALLOCATE(mEz(-2:3,-2:3,-2:3))
-   ALLOCATE(meta(-2:3,-2:3,-2:3))
    
 
    DO iz=-2,3  
@@ -1015,16 +931,6 @@ FUNCTION T3d(R,T)
    dbzdzt(it+1)=linterp3d(coffset(1),coffset(2),coffset(3), &
     dmbzdz(0,0,0), dmbzdz(1,0,0), dmbzdz(0,1,0), dmbzdz(1,1,0),&
     dmbzdz(0,0,1), dmbzdz(1,0,1), dmbzdz(0,1,1), dmbzdz(1,1,1))
-   
-   DEALLOCATE(dmbxdx)
-   DEALLOCATE(dmbydx)
-   DEALLOCATE(dmbzdx)
-   DEALLOCATE(dmbxdy)
-   DEALLOCATE(dmbydy)
-   DEALLOCATE(dmbzdy)
-   DEALLOCATE(dmbxdz)
-   DEALLOCATE(dmbydz)
-   DEALLOCATE(dmbzdz)
 
    ! interpolate j too at this stage:
    !mjx(0:3,0:3,0:3)	<-x=1-2,y=1-2,z=1-2
@@ -1061,18 +967,6 @@ FUNCTION T3d(R,T)
      ENDDO
     ENDDO
    ENDDO
-      
-   
-   DEALLOCATE(mvx)
-   DEALLOCATE(mvy)
-   DEALLOCATE(mvz)
-   DEALLOCATE(mbx)
-   DEALLOCATE(mby)
-   DEALLOCATE(mbz)
-   DEALLOCATE(mjx)
-   DEALLOCATE(mjy)
-   DEALLOCATE(mjz)    
-   DEALLOCATE(meta)
    
    ! --STEP FIVE-- !
    ! finally, calculate derivatives of electric field:
@@ -1086,9 +980,6 @@ FUNCTION T3d(R,T)
       !dmExdx(ix,iy,iz)=0.5_num*(mEx(ix+1,iy,iz)-mEx(ix-1,iy,iz))*odg(1)
       !dmEydx(ix,iy,iz)=0.5_num*(mEy(ix+1,iy,iz)-mEy(ix-1,iy,iz))*odg(1)
       !dmEzdx(ix,iy,iz)=0.5_num*(mEz(ix+1,iy,iz)-mEz(ix-1,iy,iz))*odg(1)
-   ALLOCATE(dmExdx(0:1,-2:3,-2:3))
-   ALLOCATE(dmEydx(0:1,-2:3,-2:3))
-   ALLOCATE(dmEzdx(0:1,-2:3,-2:3))
    DO iz=-2,3   
     DO iy=-2,3
      DO ix=0,1
@@ -1108,9 +999,6 @@ FUNCTION T3d(R,T)
  !     dmExdy(ix,iy,iz)=0.5_num*(mEx(ix,iy+1,iz)-mEx(ix,iy-1,iz))*odg(2)
  !     dmEydy(ix,iy,iz)=0.5_num*(mEy(ix,iy+1,iz)-mEy(ix,iy-1,iz))*odg(2)
  !     dmEzdy(ix,iy,iz)=0.5_num*(mEz(ix,iy+1,iz)-mEz(ix,iy-1,iz))*odg(2)
-   ALLOCATE(dmExdy(-2:3,0:1,-2:3))
-   ALLOCATE(dmEydy(-2:3,0:1,-2:3))
-   ALLOCATE(dmEzdy(-2:3,0:1,-2:3))  
    DO iz=-2,3   
     DO iy=0,1
      DO ix=-2,3  
@@ -1130,9 +1018,6 @@ FUNCTION T3d(R,T)
    !   dmExdz(ix,iy,iz)=0.5_num*(mEx(ix,iy,iz+1)-mEx(ix,iy,iz-1))*odg(3)
    !   dmEydz(ix,iy,iz)=0.5_num*(mEy(ix,iy,iz+1)-mEy(ix,iy,iz-1))*odg(3)
    !   dmEzdz(ix,iy,iz)=0.5_num*(mEz(ix,iy,iz+1)-mEz(ix,iy,iz-1))*odg(3)
-   ALLOCATE(dmExdz(-2:3,-2:3,0:1))
-   ALLOCATE(dmEydz(-2:3,-2:3,0:1))
-   ALLOCATE(dmEzdz(-2:3,-2:3,0:1))   
    DO iz=0,1   
     DO iy=-2,3
      DO ix=-2,3
@@ -1192,16 +1077,6 @@ FUNCTION T3d(R,T)
     dmEzdz(0,0,1), dmEzdz(1,0,1), dmEzdz(0,1,1), dmEzdz(1,1,1))
    dEzdzt(it+1)=temp
    
-   DEALLOCATE(dmExdx)
-   DEALLOCATE(dmEydx)
-   DEALLOCATE(dmEzdx)
-   DEALLOCATE(dmExdy)
-   DEALLOCATE(dmEydy)
-   DEALLOCATE(dmEzdy)
-   DEALLOCATE(dmExdz)
-   DEALLOCATE(dmEydz)
-   DEALLOCATE(dmEzdz)
-   
    !mEx(0:3,0:3,0:3)	<-x=1-2,y=1-2,z=1-2
    !linterp3d(dx,dy,dz,f000,f100,f010,f110,f001,f101,f011,f111)
          
@@ -1220,10 +1095,6 @@ FUNCTION T3d(R,T)
     mEz(0,0,0), mEz(1,0,0), mEz(0,1,0), mEz(1,1,0),&
     mEz(0,0,1), mEz(1,0,1), mEz(0,1,1), mEz(1,1,1))
    Ezt(it+1)=temp 
-    
-   DEALLOCATE(mEx)
-   DEALLOCATE(mEy)
-   DEALLOCATE(mEz)
    
   END DO
    
@@ -1347,11 +1218,6 @@ FUNCTION T3d(R,T)
     T3d(30)=dEzdzt(1)
     T3d(31:36)=0.0_num
    ENDIF
-   
-   DEALLOCATE(bxt, byt, bzt,vxt, vyt, vzt, Ext, Eyt, Ezt, jxt, jyt, jzt)
-   DEALLOCATE(dbxdxt,dbxdyt,dbxdzt,dbydxt,dbydyt,dbydzt,dbzdxt,dbzdyt,dbzdzt)
-   DEALLOCATE(dExdxt,dExdyt,dExdzt,dEydxt,dEydyt,dEydzt,dEzdxt,dEzdyt,dEzdzt)
-   !DEALLOCATE(dgt,odgt)
    
    RETURN
 
