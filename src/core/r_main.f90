@@ -87,6 +87,9 @@ IMPLICIT NONE
       !CMT  setup?
   ELSE IF ((str_cmp(FMOD, "TEST")).OR.(str_cmp(FMOD, "test"))) THEN
       !test setup?
+   xee = xe
+   yee = ye
+   zee = ze
   ELSE IF ((str_cmp(FMOD, "NLFF")).OR.(str_cmp(FMOD, "nlff"))) THEN
    NLFFflag=.TRUE.
    CALL NLFFF_ini
