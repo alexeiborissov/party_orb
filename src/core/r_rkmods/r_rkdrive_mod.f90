@@ -13,7 +13,7 @@ IMPLICIT NONE
 
   CONTAINS
 
-SUBROUTINE RKDRIVE(RSTART,USTART,GAMMASTART,MU,T1,T2,EPS,H1,NOK,NBAD,TT,S,TOTAL)
+RECURSIVE SUBROUTINE RKDRIVE(part_no,RSTART,USTART,GAMMASTART,MU,T1,T2,EPS,H1,NOK,NBAD,TT,S,TOTAL)
  !##################################################################
  !Driver routine with adaptive stepsize control. It goes from T1 to
  !T2 with accuracy eps. Hmin is the minimum allowed stepsize. nok and 
@@ -43,6 +43,7 @@ SUBROUTINE RKDRIVE(RSTART,USTART,GAMMASTART,MU,T1,T2,EPS,H1,NOK,NBAD,TT,S,TOTAL)
  REAL(num)				:: MODB, oMODB,  DMODBDS, MODGRADB
  CHARACTER(LEN=30)			:: rvfilename
  CHARACTER(LEN=35)			:: tempfile, tempfile2, tempfile3
+ integer    :: part_no
 
   T=T1
   TT(1) = T1
@@ -61,13 +62,13 @@ SUBROUTINE RKDRIVE(RSTART,USTART,GAMMASTART,MU,T1,T2,EPS,H1,NOK,NBAD,TT,S,TOTAL)
 UNDERFLOW=0
 
  efct=oneuponAQ
- IF (writervs) WRITE(rvfilename,"(A,'RV',I8.8,'.dat')"),dlocR,pn    !
+ IF (writervs) WRITE(rvfilename,"(A,'RV',I8.8,'.dat')"),dlocR,part_no    !
  IF (writervs)  open(29,file=rvfilename,recl=1024,status='unknown')     	 
- IF ((JTo2).AND.(q.gt.0)) WRITE(tempfile2,"(A,'d',I8.8,'p.tmp')"),dlocR,pn    !
- IF ((JTo2).AND.(q.lt.0)) WRITE(tempfile2,"(A,'d',I8.8,'e.tmp')"),dlocR,pn    !
+ IF ((JTo2).AND.(q.gt.0)) WRITE(tempfile2,"(A,'d',I8.8,'p.tmp')"),dlocR,part_no    !
+ IF ((JTo2).AND.(q.lt.0)) WRITE(tempfile2,"(A,'d',I8.8,'e.tmp')"),dlocR,part_no    !
  IF (JTo2)  open(56,file=tempfile2,recl=1024,status='unknown')
- IF ((JTo3).AND.(q.gt.0)) WRITE(tempfile3,"(A,'f',I8.8,'p.tmp')"),dlocR,pn    !
- IF ((JTo3).AND.(q.lt.0)) WRITE(tempfile3,"(A,'f',I8.8,'e.tmp')"),dlocR,pn    !
+ IF ((JTo3).AND.(q.gt.0)) WRITE(tempfile3,"(A,'f',I8.8,'p.tmp')"),dlocR,part_no    !
+ IF ((JTo3).AND.(q.lt.0)) WRITE(tempfile3,"(A,'f',I8.8,'e.tmp')"),dlocR,part_no    !
  IF (JTo3)  open(57,file=tempfile3,recl=1024,status='unknown')
  
 !print*, "R=", R

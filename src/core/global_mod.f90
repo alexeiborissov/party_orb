@@ -221,6 +221,21 @@ MODULE global
 
   ! flag to indicate whether MHD grid we are using is uniform
   logical, parameter    :: uniform_grid = .true.
+
+  ! type definition for packaging particle ICs
+  type part_IC_data 
+    integer               :: part_no
+    real(num), dimension(3)   :: R_0
+    real(num)             :: U_0, gamma_0, mu_0
+    real(num)             :: T_i, T_f
+    real(num)             :: eps_0, H1_0
+    integer               :: NOK, NBAD
+    real(num), dimension(NKEEPMAX) :: TT_0
+    real(num), dimension(NKEEPMAX,3) :: S_0, TOTAL_0
+  end type
+  integer :: mpi_part_IC_type
+  integer, parameter    :: n_part_ICs = 14
+
  
 !----------------------------------------------------
  contains

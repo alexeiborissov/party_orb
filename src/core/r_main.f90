@@ -27,6 +27,10 @@ IMPLICIT NONE
  REAL(num), DIMENSION(NKEEPMAX,3) :: S, TOTAL
  
  CHARACTER(LEN=35)	 :: finfile, sumname
+
+ ! MPI variables
+ integer    :: mpierr
+ logical, dimension(:), allocatable :: workers_at_work
  
  !welcome screen
  WRITE(*,*) "====RELATIVISTIC particle code====="
@@ -51,7 +55,7 @@ IMPLICIT NONE
    l3dflag=.TRUE.
    CALL MPI_INIT(errcode)
    CALL mpi_initialise      ! mpi_routines.f90
-   
+
    ltimes=ltimes*l3dtimenorm
    print*, 'loaded times:', ltimes
    IF (((nframes.GT.1)).AND.((T1/tscl.lt.ltimes(1)).OR.(T2/tscl.gt.ltimes(nframes)))) THEN
@@ -119,6 +123,9 @@ IMPLICIT NONE
    PRINT*, "['l3d','l2d','sep','CMT','test','bour', 'nlff']"
    STOP
   END IF
+
+  ! Create the mpi type for packaging the particle ICs
+  call create_part_IC_mpi_type()
   
   ! chose particle range xe/ye/ze -> particles must not start outside this range!
   IF (((R1(1)/lscl).le.xee(1)).OR.((R2(1)/lscl).ge.xee(2)))  THEN
@@ -205,115 +212,132 @@ IMPLICIT NONE
   ENDIF
 
   maxwellEfirst=.TRUE.
-  DO WHILE (pos_no_x .LE. RSTEPS(1)-1)
-   DO WHILE (pos_no_y .LE. RSTEPS(2)-1)
-    1066 DO WHILE ((pos_no_z .LE. RSTEPS(3)-1).AND.(pn .LE. pnmax))
-     DO pos_no_alpha = 2, AlphaSteps,1
-      DO pos_no_ekin = 1, EkinSteps,1
-       pos_no_r = (/pos_no_x,pos_no_y, pos_no_z/)
-       !print*, tempr
-       IF (RANDOMISE_R) THEN
-        CALL init_random_seed()
-        CALL RANDOM_NUMBER(tempr)
-        RSTART   = R1+tempr*lbox	!randomise position in bounds set in input
-       ELSE
-        RSTART   = R1+lbox*(pos_no_r*1.0_num)*gds
-       ENDIF
-       RSTARTKEEP=RSTART     !remember where we started
-       
-       pn= pn + 1
-       !call progress(pn,nparticles) ! generate the progress bar.
-       
-       !IF (JTo4) write(49,"(I4)",advance='no'), pn	   
-	   
-       1000 format ("particle no. ",i7,"/",i7, ", R=(",ES9.2,",",ES9.2,",",ES9.2,")") 
-       print 1000, pn,nparticles, RSTART
+  if (rank > 0) call worker_ready()
+  if (rank == 0) then
+    allocate(workers_at_work(nproc))
+    workers_at_work = .false.
+    DO WHILE (pos_no_x .LE. RSTEPS(1)-1)
+     DO WHILE (pos_no_y .LE. RSTEPS(2)-1)
+      1066 DO WHILE ((pos_no_z .LE. RSTEPS(3)-1).AND.(pn .LE. pnmax))
+       DO pos_no_alpha = 2, AlphaSteps,1
+        DO pos_no_ekin = 1, EkinSteps,1
+         pos_no_r = (/pos_no_x,pos_no_y, pos_no_z/)
+         !print*, tempr
+         IF (RANDOMISE_R) THEN
+          CALL init_random_seed()
+          CALL RANDOM_NUMBER(tempr)
+          RSTART   = R1+tempr*lbox	!randomise position in bounds set in input
+         ELSE
+          RSTART   = R1+lbox*(pos_no_r*1.0_num)*gds
+         ENDIF
+         RSTARTKEEP=RSTART     !remember where we started
+         
+         pn= pn + 1
+         !call progress(pn,nparticles) ! generate the progress bar.
+         
+         !IF (JTo4) write(49,"(I4)",advance='no'), pn	   
+         
+         1000 format ("particle no. ",i7,"/",i7, ", R=(",ES9.2,",",ES9.2,",",ES9.2,")") 
+         print 1000, pn,nparticles, RSTART
 
-       T1=T1Keep
-       T2=T2Keep
+         T1=T1Keep
+         T2=T2Keep
 
-       ! calculate pitch angle
-       IF (RANDOMISE_A) THEN
-        CALL init_random_seed()
-        CALL RANDOM_NUMBER(tempa)
-        alpha = Alphamin+tempa*(Alphamax-Alphamin)
-       ELSE
-        alpha = Alphamin+dalpha*(pos_no_alpha -1)	!added by S.Oskoui
-       ENDIF
-       alpha = alpha*Pi/180.0d0				! RADEG: added by S.Oskoui
+         ! calculate pitch angle
+         IF (RANDOMISE_A) THEN
+          CALL init_random_seed()
+          CALL RANDOM_NUMBER(tempa)
+          alpha = Alphamin+tempa*(Alphamax-Alphamin)
+         ELSE
+          alpha = Alphamin+dalpha*(pos_no_alpha -1)	!added by S.Oskoui
+         ENDIF
+         alpha = alpha*Pi/180.0d0				! RADEG: added by S.Oskoui
 
-       ! calculate kinetic energy - needed to define parallel and perp velocity based on alpha
-       !pos_no_ekin starts from 0, if started from 1 then (stepekin-1)
-       IF (RANDOMISE_E) THEN
-        !Ekin=EKinLow+(EKinHigh-EKinLow)*pos_no_ekin/(EkinSteps*1.0d0)*tempe   
-	Ekin= random_gamma(1.5_num, kb*maxwellpeaktemp, maxwellEfirst)
-	EKin=Ekin*6.242e18  !(convert to eV)
-	maxwellEfirst = .FALSE.
-       ELSE
-        Ekin=EKinLow+(EKinHigh-EKinLow)*pos_no_ekin/(EkinSteps*1.0d0)
-       ENDIF
-       
-       !PRINT*,'Normalising:'
-       RSTART=RSTART/Lscl
-       RSTARTKEEP=RSTARTKEEP/Lscl
-       T1=T1/Tscl
-       T2=T2/Tscl
-       
-       ! WARNING passing in dimensional Ekin into mu calc
-       CALL JTMUcalc(MU,USTART,GAMMASTART,Ekin,Alpha,RSTART,T1,T2, reset_flag)
-       
-       !print*, pos_no_r
-       
-       IF (reset_flag) THEN 
-        ! very small initial B detected
-        IF (RANDOMISE_R) THEN 
-	 ! if positions are random, then go back and generate a new random position	 
-	 print*, 'initial |B| is too small: trying a new position'
-	 pn=pn-1
-	 !pos_no_z=pos_no_z-1
-	 !CYCLE
-	 GO TO 1066
-	 ! remember, random variable seed based on system clock, so will take a second or two to generate a new seed!
-	ELSE   
-         ! if the position is SPECIFIED then skip this one	 
-	 print*, 'initial |B| is too small: skipping this particle'
-         CYCLE
-	ENDIF
-       ENDIF
-       
-       IF (JTo4) write(49,"(I4)",advance='no'), pn
-       
-       USTARTKEEP=USTART  
-       GAMMASTARTKEEP=GAMMASTART       
-       Ekin = Ekin*AQ/Ekscl        
-       
-       Rlost=.FALSE.
-       !Call the rk sophisticated driver, which then works out the arrays for the
-       !time steps and positions.
-       CALL RKDRIVE(RSTART,USTART,GAMMASTART,MU,T1,T2,EPS,H1,NOK,NBAD,TT,S,TOTAL)
-       
-       IF (writesum) write(39,*) Tscl*(T1), Lscl*RSTARTKEEP, oneuponAQ*(GAMMASTARTKEEP-1)*m*c*c, &
-       Tscl*(T2), Lscl*RSTART, oneuponAQ*(GAMMASTART-1)*m*c*c
+         ! calculate kinetic energy - needed to define parallel and perp velocity based on alpha
+         !pos_no_ekin starts from 0, if started from 1 then (stepekin-1)
+         IF (RANDOMISE_E) THEN
+          !Ekin=EKinLow+(EKinHigh-EKinLow)*pos_no_ekin/(EkinSteps*1.0d0)*tempe   
+      Ekin= random_gamma(1.5_num, kb*maxwellpeaktemp, maxwellEfirst)
+      EKin=Ekin*6.242e18  !(convert to eV)
+      maxwellEfirst = .FALSE.
+         ELSE
+          Ekin=EKinLow+(EKinHigh-EKinLow)*pos_no_ekin/(EkinSteps*1.0d0)
+         ENDIF
+         
+         !PRINT*,'Normalising:'
+         RSTART=RSTART/Lscl
+         RSTARTKEEP=RSTARTKEEP/Lscl
+         T1=T1/Tscl
+         T2=T2/Tscl
+         
+         ! WARNING passing in dimensional Ekin into mu calc
+         CALL JTMUcalc(MU,USTART,GAMMASTART,Ekin,Alpha,RSTART,T1,T2, reset_flag)
+         
+         !print*, pos_no_r
+         
+         IF (reset_flag) THEN 
+          ! very small initial B detected
+          IF (RANDOMISE_R) THEN 
+       ! if positions are random, then go back and generate a new random position	 
+       print*, 'initial |B| is too small: trying a new position'
+       pn=pn-1
+       !pos_no_z=pos_no_z-1
+       !CYCLE
+       GO TO 1066
+       ! remember, random variable seed based on system clock, so will take a second or two to generate a new seed!
+      ELSE   
+           ! if the position is SPECIFIED then skip this one	 
+       print*, 'initial |B| is too small: skipping this particle'
+           CYCLE
+      ENDIF
+         ENDIF
+         
+         IF (JTo4) write(49,"(I4)",advance='no'), pn
+         
+         USTARTKEEP=USTART  
+         GAMMASTARTKEEP=GAMMASTART       
+         Ekin = Ekin*AQ/Ekscl        
+         
+         Rlost=.FALSE.
+         !Call the rk sophisticated driver, which then works out the arrays for the
+         !time steps and positions.
+         if (nproc == 1) then
+           CALL RKDRIVE(pn,RSTART,USTART,GAMMASTART,MU,T1,T2,EPS,H1,NOK,NBAD,TT,S,TOTAL)
+         else 
+           call master_delegate_work(pn,RSTART,USTART,GAMMASTART,MU,T1,T2,EPS,H1,NOK,NBAD,TT,S,TOTAL,workers_at_work)
+         end if
+         
+         IF (writesum) write(39,*) Tscl*(T1), Lscl*RSTARTKEEP, oneuponAQ*(GAMMASTARTKEEP-1)*m*c*c, &
+         Tscl*(T2), Lscl*RSTART, oneuponAQ*(GAMMASTART-1)*m*c*c
+          
+         ! ALEXEI: sort out how to receive these from the workers
+         NKEEP = (NOK +NBAD)/NSTORE
+
+        ! CALL WRITE_ENDTIME(RSTART,T2,MU,VPARSTART)
         
-       NKEEP = (NOK +NBAD)/NSTORE
-
-      ! CALL WRITE_ENDTIME(RSTART,T2,MU,VPARSTART)
-      
+        END DO
+       END DO
+        pos_no_z=pos_no_z+1
       END DO
+      pos_no_y=pos_no_y+1
+      pos_no_z=0
      END DO
-      pos_no_z=pos_no_z+1
+     pos_no_x=pos_no_x+1
+     pos_no_y=0
     END DO
-    pos_no_y=pos_no_y+1
-    pos_no_z=0
-   END DO
-   pos_no_x=pos_no_x+1
-   pos_no_y=0
-  END DO
+
+    call wait_for_workers(workers_at_work)
+    deallocate(workers_at_work)
+  else
+    call worker_do_work()
+  end if
   IF (writesum) CLOSE(39)
   IF (JTo4) CLOSE(49)
  !CALL MAKEFILE(time_no)
   
  !END DO
+
+ call mpi_type_free(mpi_part_IC_type, mpierr)
  
  IF ((str_cmp(FMOD, "LARE")).OR.(str_cmp(FMOD, "lare"))) THEN	!forget arrays at end
   CALL mpi_close                     ! mpi_routines.f90
@@ -418,5 +442,109 @@ SUBROUTINE JTMUcalc(mu,USTART,GAMMASTART, Ekin,alpha,RSTART,T1,T2, resetflag)
   !WRITE (19,*) vtot,vperp,vparstart,El,B,magB,mu
 
 END SUBROUTINE
+
+subroutine master_delegate_work(part_no,R_0,U_0,GAMMA_0,MU_0,T_i,T_f,eps_0,H1_0,NOK,NBAD,TT_0,S_0,TOTAL_0,working_array)
+  type(part_IC_data)    :: part_ICs
+  integer               :: part_no
+  real(num), dimension(3)   :: R_0
+  real(num)             :: U_0, gamma_0, mu_0
+  real(num)             :: T_i, T_f
+  real(num)             :: eps_0, H1_0
+  integer               :: NOK, NBAD
+  real(num), dimension(NKEEPMAX) :: TT_0
+  real(num), dimension(NKEEPMAX,3) :: S_0, TOTAL_0
+  integer   :: next_worker, mpierr
+  logical, dimension(:)   :: working_array
+
+  part_ICs%part_no  = part_no
+  part_ICs%R_0      = R_0
+  part_ICs%U_0      = U_0
+  part_ICs%gamma_0  = gamma_0
+  part_ICs%mu_0     = mu_0
+  part_ICs%T_i      = T_i
+  part_ICs%T_f      = T_f
+  part_ICs%eps_0    = eps_0
+  part_ICs%H1_0     = H1_0
+  part_ICs%NOK      = NOK
+  part_ICs%NBAD     = NBAD
+  part_ICs%TT_0     = TT_0
+  part_ICs%S_0      = S_0
+  part_ICs%TOTAL_0  = TOTAL_0
+
+  call mpi_recv(next_worker,1,mpi_int,mpi_any_source,mpi_any_tag, &
+    mpi_comm_world,status, mpierr)
+  call mpi_send(part_ICs,1,mpi_part_IC_type,next_worker,1,mpi_comm_world, &
+    mpierr)
+  working_array(next_worker) = .true.
+end subroutine master_delegate_work
+
+subroutine worker_do_work()
+  type(part_IC_data)    :: part_ICs
+  integer               :: mpierr
+  
+  call mpi_recv(part_ICs,1,mpi_part_IC_type,0,1,mpi_comm_world,status,mpierr)
+  if (part_ICs%part_no >= 0) then
+    call RKDRIVE(part_ICs%part_no, part_ICs%R_0, part_ICs%U_0, part_ICs%gamma_0, &
+      part_ICs%mu_0, part_ICs%T_i, part_ICs%T_f, part_ICs%eps_0, part_ICs%H1_0, &
+      part_ICs%NOK, part_ICs%NBAD, part_ICs%TT_0, part_ICs%S_0, part_ICs%TOTAL_0)
+    call worker_ready()
+  end if
+end subroutine worker_do_work
+
+subroutine worker_ready()
+  integer   :: mpierr
+  
+  call mpi_send(rank,1,mpi_int,0,1,mpi_comm_world,mpierr)
+end subroutine worker_ready
+
+subroutine wait_for_workers(worker_array)
+  logical, dimension(:)     :: worker_array
+  integer                   :: worker, mpierr
+
+  do while (any(worker_array))
+    call mpi_recv(worker,1,mpi_int,mpi_any_source,mpi_any_tag, &
+      mpi_comm_world,status, mpierr)
+  end do
+end subroutine wait_for_workers
+
+subroutine create_part_IC_mpi_type()
+  type(part_IC_data)    :: data
+  integer, dimension(n_part_ICs)    :: lengths
+  integer(kind=mpi_address_kind), dimension(n_part_ICs)    :: disp
+  integer, dimension(n_part_ICs)    :: dtypes
+  integer               :: mpierr
+
+  ! Set the lengths 
+  lengths(1)  = 1
+  lengths(2)  = 3
+  lengths(3:11)  = 1
+  lengths(12) = NKEEPMAX
+  lengths(13:14) = NKEEPMAX*3
+
+  ! Set the types
+  dtypes(1) = mpi_int
+  dtypes(2:9) = mpireal
+  dtypes(10:11) = mpi_int
+  dtypes(12:14) = mpireal
+
+  ! Set the displacements
+  call mpi_get_address(data%part_no, disp(1), mpierr)
+  call mpi_get_address(data%R_0    , disp(2), mpierr)
+  call mpi_get_address(data%U_0    , disp(3), mpierr)
+  call mpi_get_address(data%gamma_0, disp(4), mpierr)
+  call mpi_get_address(data%mu_0   , disp(5), mpierr)
+  call mpi_get_address(data%T_i    , disp(6), mpierr)
+  call mpi_get_address(data%T_f    , disp(7), mpierr)
+  call mpi_get_address(data%eps_0  , disp(8), mpierr)
+  call mpi_get_address(data%H1_0   , disp(9), mpierr)
+  call mpi_get_address(data%NOK    , disp(10), mpierr)
+  call mpi_get_address(data%NBAD   , disp(11), mpierr)
+  call mpi_get_address(data%TT_0   , disp(12), mpierr)
+  call mpi_get_address(data%S_0    , disp(13), mpierr)
+  call mpi_get_address(data%TOTAL_0, disp(14), mpierr)
+
+  call mpi_type_create_struct(n_part_ICs, lengths, disp, dtypes, mpi_part_IC_type, mpierr)
+  call mpi_type_commit(mpi_part_IC_type, mpierr)
+end subroutine create_part_IC_mpi_type
 
 END PROGRAM reltest
